@@ -1,0 +1,13 @@
+// MiniLang example script
+let name: string = "MiniLang Interpreter";
+const VERSION: float = 1.0;
+
+//print("Welcome to MiniLang!");
+print(name);
+
+fun greet_user() -> string {
+    print("Hello from MiniLang!");
+    return "Done!";
+}
+
+greet_user();
