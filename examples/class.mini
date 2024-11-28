@@ -1,0 +1,20 @@
+/* The Person class has properties age and name.
+The new function is a constructor that initializes the class properties.
+Instantiate person with age 17 and name "John" and print the properties 
+*/
+
+class Person {
+    age: uint;
+    name: string;
+    
+    fun new(age: uint, name: string): Self {
+        return Person {
+            self.age = age;
+            self.name = name;
+        }
+    }
+}
+
+let person = Person.new(17, "John")
+print(person.name)
+print(person.age)

@@ -1,0 +1,30 @@
+
+// if-else statement
+let value = "Hello"
+
+if value is string {
+    print("It's a string!")
+} else {
+    print("Don't know this type")
+}
+
+
+// Working with an Object
+let student: Object = { name: "Alice", age: 22, grade: "A" }
+print(student.name)
+
+// Using a while loop
+let counter = 0
+while counter < 5 {
+    print(counter)
+    counter = counter + 1
+}
+
+// Returning Multiple Values from a Function
+fun swap(x: int, y: int): (int, int) {
+    return (y, x)
+}
+
+let (a, b) = swap(5, 10)
+print(a)
+print(b)
