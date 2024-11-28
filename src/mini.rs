@@ -5,7 +5,7 @@ use std::process;
 use std::io::{self, BufRead, Write};
 use std::path::Path;
 
-pub struct Lox {
+pub struct Mini {
     has_error: bool,
 }
 
@@ -38,7 +38,7 @@ impl Mini {
                 break;
             }
             Mini::run(line.trim().to_string());
-            lox.has_error = false;
+            mini.has_error = false;
         }
 
         Ok(())
