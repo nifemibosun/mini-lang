@@ -23,53 +23,51 @@ Follow these steps to set up Mini-lang:
    git clone https://github.com/nifemibosun/mini-lang.git
    cd mini-lang
 
-2. **Clone the Repository**:
+2. **Build the code**:
    ```bash
    cargo build --release
 
-3. **Clone the Repository**:
-   ```bash
-   ./target/release/mini
-
-4. **Clone the Repository**:
+3. **Use the built bin to run a mini file**:
    ```bash
    ./target/release/mini test.mini
 
 
-# Quick Start Guide
+## Quick Start Guide
 
 Here's a simple example to get started with Mini-lang:
 
-## Hello, World!
+1. ## Hello, World!
 
-Create a script `hello.mini`:
-```mini
-print("Hello, World!")
+   Create a script `hello.mini`
+      ```mini
+      print("Hello, World!")
 
-Run the script:
+## Run the script:
 
-**Clone the Repository**:
-   ```bash
-   ./target/release/mini hello.mini
+   **Test the code**:
+      ```bash
+      ./target/release/mini hello.mini
 
-Expected Output:
-```plaintext
-Hello, World!
-
-
-## Simple Math
-
-Create a script math.mini:
-``` mini
-let a = 5
-let b = 10
-print(a + b)
-
-Run the script:
-```bash
-./target/release/mini math.mini
+   **Expected Output**:
+      ```plaintext
+      Hello, World!
 
 
-Output:
-```plaintext
-15
+2. ## Simple Math
+
+   Create a script math.mini:
+      ``` mini
+      let a = 5
+      let b = 10
+      print(a + b)
+
+## Run the script:
+
+   **Test the code**
+      ```bash
+      ./target/release/mini math.mini
+
+
+   **Expected Output**:
+      ```plaintext
+      15
