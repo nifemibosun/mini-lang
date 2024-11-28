@@ -1,2 +1,75 @@
-# mini-lang
-A light weight programming language created by ChatGPT
+# Introduction to Mini-lang
+
+**Mini-lang** is a lightweight, interpreted scriptinh language built with Rust created by ChatGPT. It is designed for simplicity and versatility, making it ideal for learning about interpreters and experimenting with custom scripting solutions. 
+
+Mini-lang aims to provide a clear and concise syntax, allowing users to quickly write and execute scripts for various use cases. Whether you're exploring programming language design or contributing to its development, Mini-lang offers a robust platform for innovation.
+
+Join the journey of building and enhancing this exciting language!
+
+
+# Features
+
+- **Interpreted Execution**: Mini-lang scripts are executed directly, making it easy to write and test code quickly.
+- **Lightweight Design**: Built with simplicity in mind, Mini-lang is easy to understand and extend.
+- **Rust-Powered**: Leveraging the performance and safety of Rust, Mini-lang is efficient and reliable.
+- **Customizable**: A great platform for experimenting with new language features or designing domain-specific languages.
+
+# Installation Guide
+
+Follow these steps to set up Mini-lang:
+
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/nifemibosun/mini-lang.git
+   cd mini-lang
+
+2. **Clone the Repository**:
+   ```bash
+   cargo build --release
+
+3. **Clone the Repository**:
+   ```bash
+   ./target/release/mini
+
+4. **Clone the Repository**:
+   ```bash
+   ./target/release/mini test.mini
+
+
+# Quick Start Guide
+
+Here's a simple example to get started with Mini-lang:
+
+## Hello, World!
+
+Create a script `hello.mini`:
+```mini
+print("Hello, World!")
+
+Run the script:
+
+**Clone the Repository**:
+   ```bash
+   ./target/release/mini hello.mini
+
+Expected Output:
+```plaintext
+Hello, World!
+
+
+## Simple Math
+
+Create a script math.mini:
+``` mini
+let a = 5
+let b = 10
+print(a + b)
+
+Run the script:
+```bash
+./target/release/mini math.mini
+
+
+Output:
+```plaintext
+15
