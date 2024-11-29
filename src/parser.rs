@@ -1,26 +1,36 @@
-use crate::ast::{Expr, BinOp};
+use crate::ast::{Expr, BinOp, Statement};
 use crate::tokens::{Token, TokenType};
 
-struct Parser<'a> {
+pub struct Parser<'a> {
     tokens: &'a [Token],
     current: usize,
 }
 
 impl<'a> Parser<'a> {
-    fn new(tokens: &'a [Token]) -> Self {
+    pub fn new(tokens: &'a [Token]) -> Self {
         Self { tokens, current: 0 }
+    }
+
+    pub fn parse(&mut self) -> Result<Vec<Statement>, String> {
+        let mut statements = Vec::new();
+        while self.peek().is_some() && self.peek().unwrap().token_type != TokenType::EOF {
+            match self.parse_statement() {
+                stmt => statements.push(stmt),
+            }
+        }
+        Ok(statements)
     }
 
     // Function to parse an expression
     fn parse_expr(&mut self) -> Expr {
         let mut expr = self.parse_term();  // Parse initial term (variable, number, etc.)
 
-        while let Some(operator) = self.match_token(TokenType::Plus) {
+        while let Some(_operator) = self.match_token(TokenType::Plus) {
             let right = self.parse_term();  // Parse the next term
             expr = Expr::BinaryOp(Box::new(expr), BinOp::Add, Box::new(right));
         }
 
-        while let Some(operator) = self.match_token(TokenType::Minus) {
+        while let Some(_operator) = self.match_token(TokenType::Minus) {
             let right = self.parse_term();  // Parse the next term
             expr = Expr::BinaryOp(Box::new(expr), BinOp::Subtract, Box::new(right));
         }
@@ -28,20 +38,21 @@ impl<'a> Parser<'a> {
         expr
     }
 
+    #[allow(unreachable_patterns)]
     // Function to parse a statement
     fn parse_statement(&mut self) -> Statement {
-        if let Some(token) = self.match_token(TokenType::Let) {
+        if let Some(_token) = self.match_token(TokenType::Let) {
             // Parse a variable declaration: let <name> = <expression>
             let var_name = self.expect_token(TokenType::Identifier);
             self.expect_token(TokenType::Equal);
             let value = self.parse_expr();
             Statement::VariableDeclaration(var_name.lexeme.clone(), value)
-        } else if let Some(token) = self.match_token(TokenType::Fun) {
+        } else if let Some(_token) = self.match_token(TokenType::Fun) {
             // Parse a function declaration: fun <name>(<params>) { <body> }
             let func_name = self.expect_token(TokenType::Identifier);
-            self.expect_token(TokenType::LeftParen);
+            self.expect_token(TokenType::LParen);
             let mut params = Vec::new();
-            
+
             while let Some(param) = self.match_token(TokenType::Identifier) {
                 params.push(param.lexeme.clone());
                 if self.match_token(TokenType::Comma).is_none() {
@@ -49,46 +60,72 @@ impl<'a> Parser<'a> {
                 }
             }
             
-            self.expect_token(TokenType::RightParen);
-            self.expect_token(TokenType::LeftBrace);
+            self.expect_token(TokenType::RParen);
+            self.expect_token(TokenType::LBrace);
             
             let mut body = Vec::new();
-            while let Some(stmt) = self.parse_statement() {
-                body.push(stmt);
-                if self.match_token(TokenType::RightBrace).is_some() {
-                    break;
-                }
-            }
-            
-            Statement::FunctionDeclaration(func_name.lexeme.clone(), params, body)
-        } else if let Some(token) = self.match_token(TokenType::If) {
-            // Parse an if statement: if <condition> { <if_body> } else { <else_body> }
-            self.expect_token(TokenType::LeftParen);
-            let condition = self.parse_expr();
-            self.expect_token(TokenType::RightParen);
-            
-            self.expect_token(TokenType::LeftBrace);
-            let mut if_body = Vec::new();
-            while let Some(stmt) = self.parse_statement() {
-                if_body.push(stmt);
-                if self.match_token(TokenType::RightBrace).is_some() {
-                    break;
-                }
-            }
-            
-            let mut else_body = Vec::new();
-            if self.match_token(TokenType::Else).is_some() {
-                self.expect_token(TokenType::LeftBrace);
-                while let Some(stmt) = self.parse_statement() {
-                    else_body.push(stmt);
-                    if self.match_token(TokenType::RightBrace).is_some() {
-                        break;
+            loop {
+                match self.parse_statement() {
+                    stmt => {
+                        body.push(stmt);
+                        if self.match_token(TokenType::RBrace).is_some() {
+                            break;
+                        }
+                    }
+                    _ => {
+                        break; // Exit the loop if no more statements are parsed
                     }
                 }
             }
+            
+            
+            Statement::FunctionDeclaration(func_name.lexeme.clone(), params, body)
+        } else if let Some(_token) = self.match_token(TokenType::If) {
+            // Parse an if statement: if <condition> { <if_body> } else { <else_body> }
+            self.expect_token(TokenType::LParen);
+            let condition = self.parse_expr();
+            self.expect_token(TokenType::RParen);
+            
+            self.expect_token(TokenType::LBrace);
+            let mut if_body = Vec::new();
+
+            loop {
+                match self.parse_statement() {
+                    stmt => {
+                        if_body.push(stmt);
+                        if self.match_token(TokenType::RBrace).is_some() {
+                            break;
+                        }
+                    }
+                    _ => {
+                        break; // Exit the loop if no more statements are parsed
+                    }
+                }
+            }
+            
+            
+            let mut else_body = Vec::new();
+            if self.match_token(TokenType::Else).is_some() {
+                self.expect_token(TokenType::LBrace);
+                
+                loop {
+                    match self.parse_statement() {
+                        stmt => {
+                            else_body.push(stmt);
+                            if self.match_token(TokenType::RBrace).is_some() {
+                                break;
+                            }
+                        }
+                        _ => {
+                            break; // Exit the loop if no more statements are parsed
+                        }
+                    }
+                }
+                
+            }
     
             Statement::IfStatement(condition, if_body, else_body)
-        } else if let Some(token) = self.match_token(TokenType::Return) {
+        } else if let Some(_token) = self.match_token(TokenType::Return) {
             // Parse a return statement: return <expression>
             let value = self.parse_expr();
             Statement::Return(value)
@@ -104,12 +141,12 @@ impl<'a> Parser<'a> {
         let mut expr = self.parse_factor();  // Parse initial factor (like numbers or variables)
 
         // Now handle multiplication or division if present
-        while let Some(operator) = self.match_token(TokenType::Star) {
+        while let Some(_operator) = self.match_token(TokenType::Star) {
             let right = self.parse_factor();  // Parse the next factor
             expr = Expr::BinaryOp(Box::new(expr), BinOp::Multiply, Box::new(right));
         }
 
-        while let Some(operator) = self.match_token(TokenType::Slash) {
+        while let Some(_operator) = self.match_token(TokenType::Slash) {
             let right = self.parse_factor();  // Parse the next factor
             expr = Expr::BinaryOp(Box::new(expr), BinOp::Divide, Box::new(right));
         }
@@ -127,9 +164,9 @@ impl<'a> Parser<'a> {
             return Expr::Variable(token.lexeme.clone());  // Handle variables
         }
 
-        if let Some(token) = self.match_token(TokenType::LeftParen) {
+        if let Some(_token) = self.match_token(TokenType::LParen) {
             let expr = self.parse_expr();  // Handle parentheses for grouping expressions
-            self.expect_token(TokenType::RightParen);  // Expect closing parenthesis
+            self.expect_token(TokenType::RParen);  // Expect closing parenthesis
             return expr;
         }
 
@@ -146,7 +183,7 @@ impl<'a> Parser<'a> {
 
     // Ensure a specific token is encountered (useful for assertions)
     fn expect_token(&mut self, token_type: TokenType) -> Token {
-        if let Some(token) = self.match_token(token_type) {
+        if let Some(token) = self.match_token(token_type.clone()) {
             token
         } else {
             self.error(&format!("Expected {:?} but found {:?}", token_type, self.peek()));
@@ -155,19 +192,19 @@ impl<'a> Parser<'a> {
     }
 
     // Function to handle end of input gracefully
-    fn check_end_of_input(&self) {
-        if let Some(token) = self.peek() {
-            if token.token_type != TokenType::EndOfInput {
-                self.error("Unexpected tokens after the end of input");
-            }
-        }
-    }
+    // fn check_end_of_input(&self) {
+    //     if let Some(token) = self.peek() {
+    //         if token.token_type != TokenType::EOF {
+    //             self.error("Unexpected tokens after the end of input");
+    //         }
+    //     }
+    // }
 
     // Helper functions for matching specific tokens (e.g., checking if the current token is a certain type)
     fn match_token(&mut self, token_type: TokenType) -> Option<Token> {
         if self.check_token(token_type) {
             self.advance();
-            Some(self.previous())
+            Some(self.previous().clone())
         } else {
             None
         }

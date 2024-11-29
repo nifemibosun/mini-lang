@@ -99,7 +99,7 @@ impl Scanner {
                 } else if Scanner::is_alpha(c) {
                     self.identifier();
                 } else {
-                    Lox::error(self.line, &format!("Unexpected character: {}", c));
+                    Mini::error(self.line, &format!("Unexpected character: {}", c));
                 }
             }
         }
@@ -217,7 +217,7 @@ impl Scanner {
             "class" => TokenType::Class,
             "else" => TokenType::Else,
             "false" => TokenType::False,
-            "func" => TokenType:: Func,
+            "fun" => TokenType:: Fun,
             "for" => TokenType::For,
             "if" => TokenType::If,
             "nil" => TokenType::Nil,
@@ -225,7 +225,8 @@ impl Scanner {
             "print" => TokenType::Print,
             "return" => TokenType::Return,
             "super" => TokenType::Super,
-            "this" => TokenType::This,
+            "self" => TokenType::SelfLower,
+            "Self" => TokenType::SelfUpper,
             "true" => TokenType::True,
             "let" => TokenType::Let,
             "const" => TokenType::Const,
