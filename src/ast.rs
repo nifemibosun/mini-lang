@@ -1,54 +1,66 @@
-// use std::collections::btree_map::Values;
-#![allow(dead_code)]
+use crate::tokens::Token;
+
 #[derive(Debug, Clone)]
-// Enum for expressions
 pub enum Expr {
-    Number(i64),
+    Binary {
+        left: Box<Expr>,
+        operator: Token,
+        right: Box<Expr>,
+    },
+    Unary {
+        operator: Token,
+        right: Box<Expr>,
+    },
+    Literal(LiteralValue),
+    Grouping {
+        expr: Box<Expr>,
+    },
+}
+
+#[derive(Debug, Clone)]
+pub enum LiteralValue {
+    Number(f64),
     String(String),
-    Variable(String),
-    BinaryOp(Box<Expr>, BinOp, Box<Expr>),
-    FunctionCall(String, Vec<Expr>),
-}
-
-#[derive(Debug, Clone)]
-// Enum for binary operators
-pub enum BinOp {
-    Add,
-    Subtract,
-    Multiply,
-    Divide,
-}
-
-#[derive(Debug, Clone)]
-// Enum for statements
-pub enum Statement {
-    Expression(Expr),
-    VariableDeclaration(String, Expr),
-    FunctionDeclaration(String, Vec<String>, Vec<Statement>),
-    IfStatement(Expr, Vec<Statement>, Vec<Statement>), // If condition, if body, else body
-    Return(Expr),
-}
-
-#[derive(Debug, Clone)]
-pub enum Value {
-    Number(i64),
-    String(String),
-    Function(String, Vec<String>, Vec<Statement>),
-    Return(Box<Value>), // Use Box<Value> to break the recursion
+    Boolean(bool),
     Nil,
 }
 
-
-
-impl Value {
-    pub fn is_truthy(&self) -> bool {
+impl std::fmt::Display for Expr {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Value::Number(n) => *n != 0,       // Non-zero numbers are truthy
-            Value::String(s) => !s.is_empty(), // Non-empty strings are truthy
-            Value::Function(_, _, _) => true,   // Functions are always truthy
-            Value::Return(value) => value.is_truthy(),
-            Value::Nil => false,               // Nil is falsey
+            Expr::Binary { left, operator, right } => {
+                write!(f, "({} {} {})", operator.lexeme, left, right)
+            }
+            Expr::Unary { operator, right } => {
+                write!(f, "({} {})", operator.lexeme, right)
+            }
+            Expr::Literal(value) => match value {
+                LiteralValue::Number(num) => write!(f, "{}", num),
+                LiteralValue::String(s) => write!(f, "\"{}\"", s),
+                LiteralValue::Boolean(b) => write!(f, "{}", b),
+                LiteralValue::Nil => write!(f, "nil"),
+            },
+            Expr::Grouping { expr } => {
+                write!(f, "(group {})", expr)
+            }
         }
     }
 }
 
+impl From<f64> for LiteralValue {
+    fn from(val: f64) -> Self {
+        LiteralValue::Number(val)
+    }
+}
+
+impl From<String> for LiteralValue {
+    fn from(val: String) -> Self {
+        LiteralValue::String(val)
+    }
+}
+
+impl From<bool> for LiteralValue {
+    fn from(val: bool) -> Self {
+        LiteralValue::Boolean(val)
+    }
+}

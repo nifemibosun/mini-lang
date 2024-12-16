@@ -1,31 +1,3 @@
-// A test file mini's initial syntax
+let x = 20
 
-// This is a Mini program that tests variable declarations, arithmetic, and function calls.
-
-// A simple function to add two numbers
-func add(a, b) {
-    return a + b;
-}
-
-// A function to print a string
-func printMessage(message) {
-    print(message)
-}
-
-// Main program
-func main() {
-    // Declare some variables
-    let x = 10
-    let y = 5
-    let sum = add(x, y)
-    
-    // Print the result of the addition
-    printMessage("The sum of " + x + " and " + y + " is " + sum)
-
-    // If-Else statement
-    if x > y {
-        printMessage("x is greater than y")
-    } else {
-        printMessage("y is greater than x")
-    }
-}
+print(x)

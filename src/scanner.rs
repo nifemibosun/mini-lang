@@ -26,7 +26,6 @@ impl Scanner {
             self.scan_token();
         }
     
-        // Add EOF token with None as the literal
         self.tokens.push(Token::new(TokenType::EOF, String::new(), self.line, None));
         self.tokens.clone()
     }
@@ -48,6 +47,7 @@ impl Scanner {
             '+' => self.add_token(TokenType::Plus),
             ';' => self.add_token(TokenType::SemiColon),
             '*' => self.add_token(TokenType::Star),
+            ':' => self.add_token(TokenType::Colon),
             '!' => {
                 if self.match_char('=') {
                     self.add_token(TokenType::BangEqual);
@@ -99,10 +99,20 @@ impl Scanner {
                 } else if Scanner::is_alpha(c) {
                     self.identifier();
                 } else {
-                    Mini::error(self.line, &format!("Unexpected character: {}", c));
-                }
+                    Mini::error(self.token_from_char(c), &format!("Unexpected character: {}", c));                }
             }
         }
+    }
+
+    fn token_from_char(&mut self, c: char) -> Token {
+        let token = Token {
+            lexeme: c.to_string(),
+            token_type: TokenType::UnexpectedCharacter,
+            literal: Some(c.to_string()),
+            line: self.line,
+        };
+        
+        return token;
     }
 
     fn advance(&mut self) -> char {
@@ -188,9 +198,8 @@ impl Scanner {
             self.advance();
         }
     
-        // Look for fractional part
         if self.peek() == '.' && Scanner::is_digit(self.peek_next()) {
-            self.advance(); // Consume '.'
+            self.advance();
     
             while Scanner::is_digit(self.peek()) {
                 self.advance();

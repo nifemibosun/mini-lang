@@ -12,6 +12,7 @@ pub enum TokenType {
     Minus, 
     Plus, 
     SemiColon, 
+    Colon,
     Slash, 
     Star,
 
@@ -29,6 +30,8 @@ pub enum TokenType {
     Identifier, 
     String, 
     Number,
+
+    UnexpectedCharacter,
 
     // Keywords.
     And, 
