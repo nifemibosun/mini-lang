@@ -63,8 +63,8 @@ Here's a simple example to get started with Mini-lang:
 
 ## Run the script:
 
-   **Test the code**
-      ```bash
+**Test the code**
+   ```bash
       ./target/release/mini math.mini
 
 
