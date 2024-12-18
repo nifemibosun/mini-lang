@@ -220,7 +220,7 @@ impl Scanner {
         self.add_token(token_type);
     }
 
-    fn keyword_or_identifier(&self, text: &str) -> TokenType {
+    fn keywords(&self, text: &str) -> TokenType {
         match text {
             "and" => TokenType::And,
             "class" => TokenType::Class,
