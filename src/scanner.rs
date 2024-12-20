@@ -240,6 +240,7 @@ impl Scanner {
             "let" => TokenType::Let,
             "const" => TokenType::Const,
             "while" => TokenType::While,
+            "enum" => TokenType::Enum,
             _ => TokenType::Identifier,
         }
     }

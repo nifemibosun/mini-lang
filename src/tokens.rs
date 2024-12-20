@@ -52,6 +52,7 @@ pub enum TokenType {
     Let, 
     Const, 
     While,
+    Enum,
 
     EOF, //End Of File
 }
