@@ -2,7 +2,6 @@ use crate::mini::Mini;
 use crate::tokens::{ Token, TokenType };
 use crate::ast::{ Expr, LiteralValue };
 
-
 #[derive(Debug)]
 pub enum ParseError {
     UnexpectedToken(String),
@@ -40,9 +39,7 @@ impl std::fmt::Display for ParseError {
     }
 }
 
-
 impl std::error::Error for ParseError {}
-
 
 #[derive(Debug, Clone)]
 struct Parser {
@@ -58,13 +55,8 @@ impl Parser {
         }
     }
 
-    // TODO 
-    // pub fn parse(&self) -> Expr {
-    //     self.expression().unwrap_or_else(|e| panic!("Parse error occurred: {:?}", e))
-    // }
-
     fn expression(&mut self) -> Expr {
-        return self.equality();
+        self.equality()
     }
 
     fn equality(&mut self) -> Expr {
@@ -80,15 +72,15 @@ impl Parser {
             };
         }
     
-        return expr;
+        expr
     }
 
     fn comparison(&mut self) -> Expr {
-        let mut expr: Expr = Parser::term(&mut self.clone());
+        let mut expr: Expr = self.term();
 
         while self.match_token(vec![TokenType::Greater, TokenType::GreaterEqual, TokenType::Less, TokenType::LessEqual]) {
             let operator: Token = self.previous().clone();
-            let right: Expr = Parser::term(&mut self.clone());
+            let right: Expr = self.term();
             expr = Expr::Binary {
                 left: Box::new(expr),
                 operator,
@@ -96,7 +88,7 @@ impl Parser {
             };
         }
 
-        return expr;
+        expr
     }
 
     fn term(&mut self) -> Expr {
@@ -112,7 +104,7 @@ impl Parser {
             };
         }
     
-        return expr;
+        expr
     }
 
     fn factor(&mut self) -> Expr {
@@ -128,21 +120,20 @@ impl Parser {
             };
         }
     
-        return expr;
+        expr
     }
 
     fn unary(&mut self) -> Expr {
         if self.match_token(vec![TokenType::Bang, TokenType::Minus]) {
             let operator = self.previous().clone();
             let right = self.unary();
-            let expr = Expr::Unary {
+            return Expr::Unary {
                 operator: operator.clone(),
                 right: Box::new(right),
             };
-            return expr;
         }
       
-        return self.primary();
+        self.primary()
     }
 
     fn primary(&mut self) -> Expr {
@@ -211,11 +202,11 @@ impl Parser {
         if !self.is_at_end() {
             self.current += 1;
         }
-        return self.previous().clone();
+        self.previous().clone()
     }
 
     fn is_at_end(&self) -> bool {
-        return self.peek().token_type == TokenType::EOF;
+        self.peek().token_type == TokenType::EOF
     }
     
     fn peek(&self) -> &Token {
@@ -260,6 +251,6 @@ impl Parser {
             }
 
             self.advance();
-          }
+        }
     }
 }
