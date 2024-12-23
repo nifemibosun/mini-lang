@@ -42,31 +42,31 @@ Here's a simple example to get started with Mini-lang:
       ```mini
       print("Hello, World!")
 
-## Run the script:
+2. ## Run the script:
 
-   **Test the code**:
+a.   **Test the code**:
      ```bash
      ./target/release/mini hello.mini
 
-   **Expected Output**:
+b.   **Expected Output**:
       ```plaintext
       Hello, World!
 
 
-2. ## Simple Math
+3. ## Simple Math
 
-   Create a script math.mini:
+a.   Create a script math.mini:
       ``` mini
       let a = 5
       let b = 10
       print(a + b)
 
-## Run the script:
+4. ## Run the script:
 
-  **Test the code**
+a.  **Test the code**
      ```bash
       ./target/release/mini math.mini
 
-  **Expected Output**:
+b.  **Expected Output**:
       ```plaintext
       15
