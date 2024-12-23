@@ -69,17 +69,13 @@ impl Mini {
         }
     }
 
-    // pub fn error(line: usize, message: &str) {
-    //     Mini::report(line, "", message);
-    // }
-
     fn report(line: usize, position: &str, message: &str) {
         eprintln!("[Line {}] Error {}: {}", line, position, message);
     }
 
     pub fn error(token: Token, message: &str) {
         if token.token_type == TokenType::EOF {
-            Mini::report(token.line, " at end", message);
+            Mini::report(token.line, " at end ", message);
         } else {
             let position = format!("at {}", token.lexeme);
             let position_ref: &str = &position;

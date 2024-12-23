@@ -1,6 +1,7 @@
 use crate::tokens::Token;
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum Expr {
     Binary {
         left: Box<Expr>,
@@ -18,6 +19,7 @@ pub enum Expr {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum LiteralValue {
     Number(f64),
     String(String),

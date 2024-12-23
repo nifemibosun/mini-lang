@@ -2,7 +2,8 @@ use crate::mini::Mini;
 use crate::tokens::{ Token, TokenType };
 use crate::ast::{ Expr, LiteralValue };
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
+#[allow(dead_code)]
 pub enum ParseError {
     UnexpectedToken(String),
     MissingToken(String),
@@ -42,11 +43,13 @@ impl std::fmt::Display for ParseError {
 impl std::error::Error for ParseError {}
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct Parser {
     tokens: Vec<Token>,
     current: i64,
 }
 
+#[allow(dead_code)]
 impl Parser {
     fn new(tokens: Vec<Token>) -> Self {
         Parser { 

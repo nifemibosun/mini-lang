@@ -17,7 +17,7 @@ const name: string = "Eve"
 
 // Variable with Array data type(Arrays can grow in size)
 // Arrays have their type which is the type of data they hold
-let numbers: Array[int] = [1, 2, 3, 4]
+// let numbers: Array[int] = [1, 2, 3, 4]
 
 // Variable with Oblect data type
 let person: Object = { name: "John", age: 30 }
