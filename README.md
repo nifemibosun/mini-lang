@@ -44,11 +44,11 @@ Here's a simple example to get started with Mini-lang:
 
 2. ## Run the script:
 
-   **Test the code**:
+**Test the code**:
      ```bash
      ./target/release/mini hello.mini
-
-   **Expected Output**:
+   
+**Expected Output**:
       ```plaintext
       Hello, World!
 
@@ -63,10 +63,10 @@ Here's a simple example to get started with Mini-lang:
 
 4. ## Run the script:
 
-  **Test the code**
-   ```bash
-   ./target/release/mini math.mini
+**Test the code**
+     ```bash
+     ./target/release/mini math.mini
 
-  **Expected Output**
-  ```plaintext
-  15
+**Expected Output**
+    ```plaintext
+    15
