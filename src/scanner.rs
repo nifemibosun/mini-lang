@@ -260,4 +260,4 @@ impl Scanner {
             self.source.chars().nth(self.current + 1).unwrap()
         }
     }
-            }
+}
