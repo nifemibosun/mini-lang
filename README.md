@@ -44,18 +44,18 @@ Here's a simple example to get started with Mini-lang:
 
 2. ## Run the script:
 
-a.   **Test the code**:
+   **Test the code**:
      ```bash
      ./target/release/mini hello.mini
 
-b.   **Expected Output**:
+   **Expected Output**:
       ```plaintext
       Hello, World!
 
 
 3. ## Simple Math
 
-a.   Create a script math.mini:
+   Create a script math.mini:
       ``` mini
       let a = 5
       let b = 10
@@ -63,10 +63,10 @@ a.   Create a script math.mini:
 
 4. ## Run the script:
 
-a.  **Test the code**
-     ```bash
-      ./target/release/mini math.mini
+  **Test the code**
+   ```bash
+   ./target/release/mini math.mini
 
-b.  **Expected Output**:
-      ```plaintext
-      15
+  **Expected Output**
+  ```plaintext
+  15
