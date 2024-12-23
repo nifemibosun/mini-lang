@@ -48,7 +48,7 @@ Here's a simple example to get started with Mini-lang:
      ```bash
      ./target/release/mini hello.mini
    
-Expected Output**:
+Expected Output:
    ```plaintext
    Hello, World!
 
