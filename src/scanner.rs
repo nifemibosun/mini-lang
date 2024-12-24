@@ -55,6 +55,20 @@ impl Scanner {
                     self.add_token(TokenType::Bang);
                 }
             }
+            '|' => {
+                if self.match_char('|') {
+                    self.add_token(TokenType::Or);
+                } else {
+                    Mini::error(self.token_from_char(c), "Unexpected character: |");
+                }
+            }
+            '&' => {
+                if self.match_char('&') {
+                    self.add_token(TokenType::And);
+                } else {
+                    Mini::error(self.token_from_char(c), "Unexpected character: &");
+                }
+            }
             '=' => {
                 if self.match_char('=') {
                     self.add_token(TokenType::EqualEqual);
@@ -91,99 +105,6 @@ impl Scanner {
             'o' => {
                 if self.match_char('r') {
                     self.add_token(TokenType::Or);
-                } else {
-                    self.add_token(TokenType::Identifier);
-                }
-            }
-            'i' => {
-                if self.match_char('n') {
-                    if self.match_char('t') {
-                        self.add_token(TokenType::Int);
-                    }
-                } else if self.match_char('m') {
-                    if self.match_char('p') {
-                        if self.match_char('o') {
-                            if self.match_char('r') {
-                                if self.match_char('t') {
-                                    self.add_token(TokenType::Import);  
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    self.add_token(TokenType::Identifier);
-                }
-            }
-            'u' => {
-                if self.match_char('i') {
-                    if self.match_char('n') {
-                        if self.match_char('t') {
-                            self.add_token(TokenType::Uint);
-                        }
-                    }
-                } else {
-                    self.add_token(TokenType::Identifier);
-                }
-            }
-            'b' => {
-                if self.match_char('o') {
-                    if self.match_char('o') {
-                        if self.match_char('l') {
-                            self.add_token(TokenType::Bool);
-                        }
-                    }
-                } else {
-                    self.add_token(TokenType::Identifier);
-                }
-            }
-            'f' => {
-                if self.match_char('l') {
-                    if self.match_char('o') {
-                        if self.match_char('a') {
-                            if self.match_char('t') {
-                                self.add_token(TokenType::Float);
-                            }
-                        }
-                    }
-                } else {
-                    self.add_token(TokenType::Identifier);
-                }
-            }
-            's' => {
-                if self.match_char('t') {
-                    if self.match_char('r') {
-                        if self.match_char('i') {
-                            if self.match_char('n') {
-                                if self.match_char('g') {
-                                    self.add_token(TokenType::Str);
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    self.add_token(TokenType::Identifier);
-                }
-            }
-            'O' => {
-                if self.match_char('b') {
-                    if self.match_char('j') {
-                        if self.match_char('e') {
-                            if self.match_char('c') {
-                                if self.match_char('t') {
-                                    self.add_token(TokenType::Object);
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    self.add_token(TokenType::Identifier);
-                }
-            }
-            'V' => {
-                if self.match_char('e') {
-                    if self.match_char('c') {
-                        self.add_token(TokenType::Uint);
-                    }
                 } else {
                     self.add_token(TokenType::Identifier);
                 }
@@ -324,7 +245,6 @@ impl Scanner {
             "string" => TokenType::Str,
             "Object" => TokenType::Object,
             "Vec" => TokenType::Vector,
-            "and" => TokenType::And,
             "class" => TokenType::Class,
             "else" => TokenType::Else,
             "false" => TokenType::False,
@@ -332,7 +252,6 @@ impl Scanner {
             "for" => TokenType::For,
             "if" => TokenType::If,
             "nil" => TokenType::Nil,
-            "or" => TokenType::Or,
             "print" => TokenType::Print,
             "return" => TokenType::Return,
             "super" => TokenType::Super,

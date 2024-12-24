@@ -1,7 +1,8 @@
 use crate::mini::Mini;
 use crate::tokens::{ Token, TokenType };
 use crate::ast::{ Expr, LiteralValue };
-use std::fs;
+use std::collections::HashSet;
+// use std::fs;
 
 #[derive(Debug,Clone)]
 #[allow(dead_code)]
@@ -19,6 +20,7 @@ pub enum ParseError {
     InvalidSyntax(String),
     UnexpectedInputAfterEOF(String),
     InvalidFunctionDefinition(String),
+    FileNotFound(String),
 }
 
 impl std::fmt::Display for ParseError {
@@ -37,6 +39,7 @@ impl std::fmt::Display for ParseError {
             ParseError::InvalidSyntax(ref msg) => write!(f, "Invalid Syntax: {}", msg),
             ParseError::UnexpectedInputAfterEOF(ref msg) => write!(f, "Unexpected Input After EOF: {}", msg),
             ParseError::InvalidFunctionDefinition(ref msg) => write!(f, "Invalid Function Definition: {}", msg),
+            ParseError::FileNotFound(ref msg) => write!(f, "File Not Found: {}", msg),
         }
     }
 }
@@ -59,40 +62,40 @@ impl Parser {
         }
     }
 
-    fn parse(&mut self) -> Result<(), ParseError> {
-        while !self.is_at_end() {
-            self.declaration()?;
-        }
-        Ok(())
-    }
+    // fn parse(&mut self) -> Result<(), ParseError> {
+    //     while !self.is_at_end() {
+    //         self.declaration()?;
+    //     }
+    //     Ok(())
+    // }
 
     fn expression(&mut self) -> Expr {
         self.equality()
     }
 
-    fn declaration(&mut self) -> Result<(), ParseError> {
-        if self.match_token(vec![TokenType::Import]) {
-            return self.import_statement();
-        }
-        self.statement()
-    }
+    // fn declaration(&mut self) -> Result<(), ParseError> {
+    //     if self.match_token(vec![TokenType::Import]) {
+    //         return self.import_statement();
+    //     }
+    //     self.statement()
+    // }
 
-    fn import_statement(&mut self) -> Result<(), ParseError> {
-        let token = self.advance();
-        let file_path = match &token.literal {
-            Some(LiteralValue::String(s)) => s.clone(),
-            _ => return Err(ParseError::InvalidSyntax("Expected string literal".into())),
-        };
+    // fn import_statement(&mut self) -> Result<(), ParseError> {
+    //     let token = self.advance();
+    //     let file_path = match &token.literal {
+    //         Some(LiteralValue::String(s)) => s.clone(),
+    //         _ => return Err(ParseError::InvalidSyntax("Expected string literal".into())),
+    //     };
 
-        let content = fs::read_to_string(&file_path)
-            .map_err(|_| ParseError::FileNotFound(file_path.clone()))?;
+    //     let content = fs::read_to_string(&file_path)
+    //         .map_err(|_| ParseError::FileNotFound(file_path.clone()))?;
 
-        let tokens = tokenize(&content)?;
-        let mut parser = Parser::new(tokens);
-        parser.parse()?;
+    //     let tokens = self.tokenize(&content)?;
+    //     let mut parser = Parser::new(tokens);
+    //     parser.parse()?;
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
     fn equality(&mut self) -> Expr {
         let mut expr: Expr = self.comparison();
@@ -168,49 +171,64 @@ impl Parser {
             };
         }
       
-        self.primary()
+        match self.primary() {
+            Ok(expr) => expr,
+            Err(err) => panic!("Error parsing primary expression: {}", err),
+        }
     }
 
-    fn primary(&mut self) -> Expr {
+    fn primary(&mut self) -> Result<Expr, String> {
         if self.match_token(vec![TokenType::False]) {
-            return Expr::Literal(LiteralValue::Boolean(false))
+            return Ok(Expr::Literal(LiteralValue::Boolean(false)));
         }
         if self.match_token(vec![TokenType::True]) {
-            return Expr::Literal(LiteralValue::Boolean(true))
+            return Ok(Expr::Literal(LiteralValue::Boolean(true)));
         }
         if self.match_token(vec![TokenType::Nil]) {
-            return Expr::Literal(LiteralValue::Nil)
+            return Ok(Expr::Literal(LiteralValue::Nil));
         }
         if self.match_token(vec![TokenType::Number, TokenType::String]) {
             if let Some(value) = &self.previous().literal {
-                return match self.previous().token_type {
+                match self.previous().token_type {
                     TokenType::Number => {
                         if let Ok(number) = value.parse::<f64>() {
-                            Expr::Literal(LiteralValue::Number(number))
+                            return Ok(Expr::Literal(LiteralValue::Number(number)));
                         } else {
-                            panic!("Expected numeric literal.");
+                            return Err(format!("Invalid numeric literal: {}", value));
                         }
                     }
-                    TokenType::String => Expr::Literal(LiteralValue::String(value.clone())),
-                    _ => panic!("Unexpected token literal type."),
-                };
+                    TokenType::String => {
+                        return Ok(Expr::Literal(LiteralValue::String(value.clone())));
+                    }
+                    _ => {
+                        return Err("Unexpected token literal type.".to_string());
+                    }
+                }
             } else {
-                panic!("Expected a literal value.");
+                return Err("Expected a literal value.".to_string());
             }
         }
-
+    
         if self.match_token(vec![TokenType::LParen]) {
-            let expr: Expr = self.expression();
-            self.consume(TokenType::RParen, "Expect ')' after expression.");
-            return Expr::Grouping { expr: Box::new(expr) };
+            let expr = self.expression();
+            self.consume(TokenType::RParen, "Expect ')' after expression.")
+                .map_err(|e| e.to_string())?;
+            return Ok(Expr::Grouping {
+                expr: Box::new(expr),
+            });
         }
-
-        panic!("{}", Parser::error(self.peek().clone(), "Expect expression."));
+    
+        Err(format!(
+            "Expect expression. Found: {:?}",
+            self.peek().token_type
+        ))
     }
+    
 
     fn match_token(&mut self, types: Vec<TokenType>) -> bool {
-        for token_type in types {
-            if self.check(token_type) {
+        let token_set: HashSet<TokenType> = types.into_iter().collect();
+        if let Some(token) = self.tokens.get(self.current as usize) {
+            if token_set.contains(&token.token_type) {
                 self.advance();
                 return true;
             }
@@ -218,12 +236,12 @@ impl Parser {
         false
     }
 
-    fn consume(&mut self, expected: TokenType, message: &str) -> Token {
+    fn consume(&mut self, expected: TokenType, message: &str) -> Result<Token, ParseError> {
         if self.check(expected) {
-            return self.advance();
+            Ok(self.advance())
+        } else {
+            Err(ParseError::UnexpectedToken(message.to_string()))
         }
-    
-        panic!("{}", Parser::error(self.peek().clone(), message));
     }
 
     fn check(&self, token_type: TokenType) -> bool {

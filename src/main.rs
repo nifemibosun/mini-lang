@@ -13,7 +13,7 @@ fn main() {
     let mut mini = Mini::new();
 
     if args.len() > 2 {
-        eprintln!("Usage: mini [script]");
+        eprintln!("Usage: mini <filename>.mini");
         process::exit(64);
     } else if args.len() == 2 {
         // Run a file

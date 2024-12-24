@@ -2,8 +2,8 @@
 // if-else statement
 let value = "Hello"
 
-if (value.type() == string) {
-    print("It's a string!")
+if (value.type() == string && value == "Hello") {
+    print("It's a string Hello!")
 } else {
     print("Don't know this type")
 }

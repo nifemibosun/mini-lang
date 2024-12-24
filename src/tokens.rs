@@ -41,6 +41,14 @@ pub enum TokenType {
     Str,
     Object,
     Vector,
+
+    // Logical operators
+    BitwiseAnd,
+    BitwiseOr,
+    
+    LogicalAnd,
+    LogicalOr,
+    
     
     // Keywords.
     And, 
