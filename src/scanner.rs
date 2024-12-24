@@ -222,6 +222,12 @@ impl Scanner {
 
     fn keyword_or_identifier(&self, text: &str) -> TokenType {
         match text {
+            "int" => TokenType::Int,
+            "uint" => TokenType::Uint,
+            "float" => TokenType::Float,
+            "bool" => TokenType::Bool,
+            "Object" => TokenType::Object,
+            "Vec" => TokenType::Vector,
             "and" => TokenType::And,
             "class" => TokenType::Class,
             "else" => TokenType::Else,
@@ -240,6 +246,7 @@ impl Scanner {
             "let" => TokenType::Let,
             "const" => TokenType::Const,
             "while" => TokenType::While,
+            "import" => TokenType::Import,
             "enum" => TokenType::Enum,
             _ => TokenType::Identifier,
         }
