@@ -280,7 +280,14 @@ impl Parser {
                 | TokenType::If
                 | TokenType::While
                 | TokenType::Print
-                | TokenType::Import
+                | TokenType::Int
+                | TokenType::Uint
+                | TokenType::Float
+                | TokenType::Bool
+                | TokenType::String
+                | TokenType::Object
+                | TokenType::Vec
+                | TokenType::Nil
                 | TokenType::Return => return,
                 _ => {}
             }
