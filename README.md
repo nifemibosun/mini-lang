@@ -30,7 +30,7 @@ Follow these steps to set up Mini-lang:
 
 3. **Use the built binary to run a mini file**:
    ```bash
-   ./target/release/mini test.mini
+   ./target/release/mini examples/test.mini
    ```
 
 ## Quick Start Guide
