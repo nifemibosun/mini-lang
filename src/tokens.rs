@@ -40,7 +40,7 @@ pub enum TokenType {
     Bool,
     Str,
     Object,
-    Vector
+    Vector,
     
     // Keywords.
     And, 
@@ -61,7 +61,7 @@ pub enum TokenType {
     Let, 
     Const, 
     While,
-    Import
+    Import,
     Enum,
 
     EOF, //End Of File
