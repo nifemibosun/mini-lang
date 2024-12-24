@@ -284,7 +284,7 @@ impl Parser {
                 | TokenType::Uint
                 | TokenType::Float
                 | TokenType::Bool
-                | TokenType::String
+                | TokenType::Str
                 | TokenType::Object
                 | TokenType::Vec
                 | TokenType::Nil
