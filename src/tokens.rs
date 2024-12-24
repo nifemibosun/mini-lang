@@ -33,6 +33,15 @@ pub enum TokenType {
 
     UnexpectedCharacter,
 
+    // Types
+    Int,
+    Uint,
+    Float,
+    Bool,
+    Str,
+    Object,
+    Vector
+    
     // Keywords.
     And, 
     Class, 
@@ -52,6 +61,7 @@ pub enum TokenType {
     Let, 
     Const, 
     While,
+    Import
     Enum,
 
     EOF, //End Of File
