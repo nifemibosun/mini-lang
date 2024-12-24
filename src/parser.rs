@@ -286,7 +286,7 @@ impl Parser {
                 | TokenType::Bool
                 | TokenType::Str
                 | TokenType::Object
-                | TokenType::Vec
+                | TokenType::Vector
                 | TokenType::Nil
                 | TokenType::Return => return,
                 _ => {}
