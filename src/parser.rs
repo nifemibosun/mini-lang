@@ -58,8 +58,39 @@ impl Parser {
         }
     }
 
+    fn parse(&mut self) -> Result<(), ParseError> {
+        while !self.is_at_end() {
+            self.declaration()?;
+        }
+        Ok(())
+    }
+
     fn expression(&mut self) -> Expr {
         self.equality()
+    }
+
+    fn declaration(&mut self) -> Result<(), ParseError> {
+        if self.match_token(vec![TokenType::Import]) {
+            return self.import_statement();
+        }
+        self.statement()
+    }
+
+    fn import_statement(&mut self) -> Result<(), ParseError> {
+        let token = self.advance();
+        let file_path = match &token.literal {
+            Some(LiteralValue::String(s)) => s.clone(),
+            _ => return Err(ParseError::InvalidSyntax("Expected string literal".into())),
+        };
+
+        let content = fs::read_to_string(&file_path)
+            .map_err(|_| ParseError::FileNotFound(file_path.clone()))?;
+
+        let tokens = tokenize(&content)?;
+        let mut parser = Parser::new(tokens);
+        parser.parse()?;
+
+        Ok(())
     }
 
     fn equality(&mut self) -> Expr {
@@ -249,6 +280,7 @@ impl Parser {
                 | TokenType::If
                 | TokenType::While
                 | TokenType::Print
+                | TokenType::Import
                 | TokenType::Return => return,
                 _ => {}
             }
