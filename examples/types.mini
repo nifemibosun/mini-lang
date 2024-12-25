@@ -1,0 +1,17 @@
+// Types 
+
+let num1: int = -60;
+print(num1);
+
+let num2: uint = 40;
+print(num2);
+
+let array: Array[uint] = [1, 2, 3, 4];
+print(array);
+
+let dict: Object = {
+    name: "John Doe",
+    age: 17
+};
+print(dict);
+

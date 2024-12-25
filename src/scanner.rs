@@ -41,6 +41,8 @@ impl Scanner {
             ')' => self.add_token(TokenType::RParen),
             '{' => self.add_token(TokenType::LBrace),
             '}' => self.add_token(TokenType::RBrace),
+            '[' => self.add_token(TokenType::LSquare),
+            ']' => self.add_token(TokenType::RSquare),
             ',' => self.add_token(TokenType::Comma),
             '.' => self.add_token(TokenType::Dot),
             '-' => self.add_token(TokenType::Minus),

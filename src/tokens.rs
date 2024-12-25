@@ -7,6 +7,8 @@ pub enum TokenType {
     RParen, 
     LBrace, 
     RBrace,
+    RSquare,
+    LSquare,
     Comma, 
     Dot, 
     Minus, 

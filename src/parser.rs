@@ -187,14 +187,28 @@ impl Parser {
         if self.match_token(vec![TokenType::Nil]) {
             return Ok(Expr::Literal(LiteralValue::Nil));
         }
-        if self.match_token(vec![TokenType::Number, TokenType::String]) {
+        if self.match_token(vec![TokenType::Int , TokenType::Uint, TokenType::Float, TokenType::String]) {
             if let Some(value) = &self.previous().literal {
                 match self.previous().token_type {
-                    TokenType::Number => {
-                        if let Ok(number) = value.parse::<f64>() {
-                            return Ok(Expr::Literal(LiteralValue::Number(number)));
+                    TokenType::Int => {
+                        if let Ok(int) = value.parse::<i64>() {
+                            return Ok(Expr::Literal(LiteralValue::Int(int)));
                         } else {
-                            return Err(format!("Invalid numeric literal: {}", value));
+                            return Err(format!("Invalid int literal: {}", value));
+                        }
+                    }
+                    TokenType::Uint => {
+                        if let Ok(uint) = value.parse::<u64>() {
+                            return Ok(Expr::Literal(LiteralValue::Uint(uint)));
+                        } else {
+                            return Err(format!("Invalid uint literal: {}", value));
+                        }
+                    }
+                    TokenType::Float => {
+                        if let Ok(float) = value.parse::<f64>() {
+                            return Ok(Expr::Literal(LiteralValue::Float(float)));
+                        } else {
+                            return Err(format!("Invalid float literal: {}", value));
                         }
                     }
                     TokenType::String => {

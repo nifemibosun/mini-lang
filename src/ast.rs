@@ -21,7 +21,9 @@ pub enum Expr {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum LiteralValue {
-    Number(f64),
+    Int(i64),
+    Uint(u64),
+    Float(f64),
     String(String),
     Boolean(bool),
     Nil,
@@ -37,7 +39,9 @@ impl std::fmt::Display for Expr {
                 write!(f, "({} {})", operator.lexeme, right)
             }
             Expr::Literal(value) => match value {
-                LiteralValue::Number(num) => write!(f, "{}", num),
+                LiteralValue::Int(int) => write!(f, "{}", int),
+                LiteralValue::Uint(uint) => write!(f, "{}", uint),
+                LiteralValue::Float(float) => write!(f, "{}", float),
                 LiteralValue::String(s) => write!(f, "\"{}\"", s),
                 LiteralValue::Boolean(b) => write!(f, "{}", b),
                 LiteralValue::Nil => write!(f, "nil"),
@@ -49,9 +53,21 @@ impl std::fmt::Display for Expr {
     }
 }
 
+impl From<i64> for LiteralValue {
+    fn from(val: i64) -> Self {
+        LiteralValue::Int(val)
+    }
+}
+
+impl From<u64> for LiteralValue {
+    fn from(val: u64) -> Self {
+        LiteralValue::Uint(val)
+    }
+}
+
 impl From<f64> for LiteralValue {
     fn from(val: f64) -> Self {
-        LiteralValue::Number(val)
+        LiteralValue::Float(val)
     }
 }
 
