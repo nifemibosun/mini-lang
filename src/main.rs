@@ -16,14 +16,12 @@ fn main() {
         eprintln!("Usage: mini <filename>.mini");
         process::exit(64);
     } else if args.len() == 2 {
-        // Run a file
         let filename = &args[1];
         if let Err(err) = mini.run_file(filename) {
             eprintln!("Error running file: {}", err);
             process::exit(1);
         }
     } else {
-        // Start REPL
         if let Err(err) = mini.run_prompt() {
             eprintln!("Error in REPL: {}", err);
             process::exit(1);

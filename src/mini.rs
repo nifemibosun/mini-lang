@@ -50,7 +50,11 @@ impl Mini {
             if bytes_read == 0 {
                 break;
             }
-    
+
+            if line.trim() == "exit" {
+                break;
+            }
+
             let trimmed_line = line.trim();
             if !trimmed_line.is_empty() {
                 Mini::run(trimmed_line.to_string());
