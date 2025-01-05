@@ -1,6 +1,6 @@
 
 // if-else statement
-let value = "Hello"
+let value: string = "Hello"
 
 if (value.type() == string && value == "Hello") {
     print("It's a string Hello!")
