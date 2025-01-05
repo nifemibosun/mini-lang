@@ -1,0 +1,29 @@
+// if and else statement 
+
+// Add specific types to variable
+let num1: int = 5;
+
+if (num1 >= 5) {
+    // returning thing with dynamic string 
+    return `{num1} is a great choice`;
+} else {
+    return "This is an illegal number";
+}
+if (num1 != 5) {
+    // returning thing with dynamic string 
+    return `{num1} is a great choice`;
+} else {
+    return "This is an illegal number";
+}
+if (num1 >= 5 && num1 <= 10) {
+    // returning thing with dynamic string 
+    return `{num1} is a great choice`;
+} else {
+    return "This is an illegal number";
+}
+if (num1 >= 5 || num1 <= 10) {
+    // returning thing with dynamic string 
+    return `{num1} is a great choice`;
+} else {
+    return "This is an illegal number";
+}

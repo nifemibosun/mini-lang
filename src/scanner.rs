@@ -104,13 +104,6 @@ impl Scanner {
             ' ' | '\r' | '\t' => {} // Ignore whitespace
             '\n' => self.line += 1, // Handle line breaks
             '"' => self.string(),
-            'o' => {
-                if self.match_char('r') {
-                    self.add_token(TokenType::Or);
-                } else {
-                    self.add_token(TokenType::Identifier);
-                }
-            }
             _ => {
                 if Scanner::is_digit(c) {
                     self.number();

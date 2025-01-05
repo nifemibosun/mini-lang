@@ -1,0 +1,10 @@
+import "io.mini";
+
+fun print(value: string): void {
+    io.stdout(value);
+}
+
+fun input(value: string): string {
+    io.stdin(value);
+    return value;
+}
