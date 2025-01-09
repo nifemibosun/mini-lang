@@ -1,0 +1,11 @@
+import { stdin, stdout } from "core.mini";
+
+fun print(input: string) {
+    stdout(input);
+}
+
+fun read(text: string): string {
+    let input: string = stdin(text).catch("Could not read text");
+
+    return input;
+}
