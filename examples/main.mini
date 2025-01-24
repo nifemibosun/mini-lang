@@ -8,5 +8,5 @@ fun main() {
     let name: string = input("Enter your name: \n");
     let greeting = greet(name);
 
-    print(greet)
+    print(greeting);
 }
