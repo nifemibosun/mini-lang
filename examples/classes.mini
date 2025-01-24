@@ -16,5 +16,5 @@ class Person {
 }
 
 let person = Person.new(17, "John")
-print(person.name)
-print(person.age)
+print(person.name);
+print(person.age);
