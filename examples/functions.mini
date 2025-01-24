@@ -2,23 +2,23 @@ import "io.mini";
 
 // functions begin with the fun keyword
 fun greet() {
-    print("Hello, World!")
+    print("Hello, World!");
 }
 
 // calling the greet function
-greet()
+greet();
 
 // Functions can have parameters and return types
 fun add(a: int, b: int): int {
-    return a + b
+    return a + b;
 }
 
-let result = add(5, 10)
-print(result)
+let result = add(5, 10);
+print(result);
 
 fun multiply(a: float, b: float): float {
-    return a * b
+    return a * b;
 }
 
-let product = multiply(2.5, 4.0)
-print(product)
+let product = multiply(2.5, 4.0);
+print(product);
