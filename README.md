@@ -1,3 +1,5 @@
+## Warning the language is still in development, but we are open to contributions
+
 # Introduction to Mini-lang
 
 **Mini-lang** is a lightweight, interpreted general-purpose language built with Rust. It is designed for simplicity and versatility, making it ideal for learning about interpreters and experimenting with custom language solutions.
