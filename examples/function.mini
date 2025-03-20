@@ -1,0 +1,29 @@
+// examples/function.mini
+/*Functions begin with the func keyword. All function can only be called in the main function.*/
+
+
+func greet() {
+    print("Hello, World!");
+}
+
+// Functions can have parameters and return types
+func add(a: int32, b: int32): int32 {
+    return a + b;
+}
+
+func multiply(a: float32, b: float32): float32 {
+    return a * b;
+}
+
+
+func main() {
+    // calling the greet function.
+    greet();
+
+    // calling the add/multiply functions but passing what they returned into a variable.
+    let result = add(5, 10);
+    print("Sum: {}", result);
+
+    let product = multiply(2.5, 4.0);
+    print("Product: {}", product);
+}

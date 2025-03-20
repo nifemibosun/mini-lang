@@ -1,0 +1,40 @@
+// examples/struct.mini
+/* The Person struct has properties age and name. The construct keyword is used for adding methods to the struct. The new function is a constructor that initializes the struct properties. The new keyword can either return Self or the name of the struct(i.e User). In the main function, I instantiate person with age 17 and name "John" and print the properties.*/
+
+
+struct Person {
+    age: uint16,
+    name: string,
+}
+
+construct Person {
+    func new(age: uint16, name: string): Self {
+        return Person { age, name };
+    }
+}
+
+
+struct User {
+    username: string,
+    age: uint16,
+    email: string,
+}
+
+construct User {
+    func new(username: string, age: uint16, email: string): User {
+        return User {
+            username: username,
+            age: age,
+            email: email,
+        };
+    }
+}
+
+
+func main() {
+    let person = Person.new(17, "John");
+    print("{} is {} years old.", person.name, person.age);
+
+    let user = User.new("johndoe", 17, "johndoe@gmail.com");
+    print("{} with email {} is {} years old.", user.username, user.age, user.email);
+}

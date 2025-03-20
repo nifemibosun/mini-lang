@@ -1,29 +1,32 @@
-// if and else statement 
 
-// Add specific types to variable
-let num1: int = 5;
+// examples/control_flow.mini
 
-if (num1 >= 5) {
-    // returning thing with dynamic string 
-    return `{num1} is a great choice`;
-} else {
-    return "This is an illegal number";
+// using for-loop
+func eval_for(name_arr: Arr<string>) {
+    for (let i: uint32 = 0; i < name_arr.len(); i += 1) {
+        print("{}. {}", i, name_arr[i]);
+    }
+
+    print("For loop complete.");
 }
-if (num1 != 5) {
-    // returning thing with dynamic string 
-    return `{num1} is a great choice`;
-} else {
-    return "This is an illegal number";
+
+// using while-loop
+func eval_while(name_arr: Arr<string>) {
+    let i: uint32 = 0;
+
+    while (i < name_arr.len()) {
+        print("{}. {}", i, name_arr[i]);
+        i += 1;
+    }
+
+    print("While loop complete.");
 }
-if (num1 >= 5 && num1 <= 10) {
-    // returning thing with dynamic string 
-    return `{num1} is a great choice`;
-} else {
-    return "This is an illegal number";
+
+
+func main() {
+    let name_arr: Arr<string> = ["John", "Doe", "Fizz", "Buzz", "Bazz"];
+
+    eval_for(name_arr);
+    eval_while(name_arr);
 }
-if (num1 >= 5 || num1 <= 10) {
-    // returning thing with dynamic string 
-    return `{num1} is a great choice`;
-} else {
-    return "This is an illegal number";
-}
+
