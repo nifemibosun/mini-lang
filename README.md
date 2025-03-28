@@ -43,7 +43,9 @@ Here's a simple example to get started with Mini-lang:
 
    Create a file `hello.mini`:
    ```mini
-   print("Hello, World!")
+   func main() {
+       print("Hello, World!")
+   }
    ```
 
 2. **Run the program:**
@@ -62,11 +64,13 @@ Here's a simple example to get started with Mini-lang:
 
    Create a file `math.mini`:
    ```mini
-   // explicit type for a variable
-   let a: int = 5
-   // types can also be inferred
-   let b = 10
-   print(a + b)
+   function main() {
+       // explicit type for a variable
+       let a: int = 5
+       // types can also be inferred
+       let b = 10
+       print(a + b)
+   }
    ```
 
 4. **Run the program:**
