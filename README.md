@@ -1,4 +1,5 @@
-## Warning the language is still in development, but we are open to contributions
+## Side Note
+The language is still in development, but we are open to contributions.
 
 # Introduction to Mini-lang
 
@@ -66,9 +67,9 @@ Here's a simple example to get started with Mini-lang:
    ```mini
    function main() {
        // explicit type for a variable
-       let a: int = 5
+       let a: int32 = 5
        // types can also be inferred
-       let b = 10
+       let b = 10 // b is inferred as int32 
        print(a + b)
    }
    ```
