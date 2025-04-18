@@ -4,7 +4,7 @@
 // using for-loop
 func eval_for(name_arr: Arr<string>) {
     for (let i: uint32 = 0; i < name_arr.len(); i += 1) {
-        print("{}. {}", i, name_arr[i]);
+        println("{}. {}", i, name_arr[i]);
     }
 
     print("For loop complete.");
@@ -15,11 +15,11 @@ func eval_while(name_arr: Arr<string>) {
     let i: uint32 = 0;
 
     while (i < name_arr.len()) {
-        print("{}. {}", i, name_arr[i]);
+        println("{}. {}", i, name_arr[i]);
         i += 1;
     }
 
-    print("While loop complete.");
+    println("While loop complete.");
 }
 
 

@@ -11,7 +11,7 @@ pub struct Mini {
 #[allow(unused)]
 impl Mini {
     pub fn new() -> Self {
-        Mini { has_error: false }
+        Self { has_error: false }
     }
 
     pub fn run_file(&self, path: &str) -> Result<()> {
@@ -40,6 +40,11 @@ impl Mini {
             }
     
             let trimmed_line = line.trim();
+
+            if trimmed_line == "exit" {
+                break;
+            }
+
             if !trimmed_line.is_empty() {
                 self.run(trimmed_line.to_string());
             }

@@ -8,6 +8,7 @@ pub struct Scanner {
     start: usize,
     current: usize,
     line: usize,
+    mini: Mini
 }
 
 #[allow(unused)]
@@ -19,17 +20,18 @@ impl Scanner {
             start: 0,
             current: 0,
             line: 1,
+            mini: Mini::new()
         }
     }
 
-    pub fn scan_tokens(&mut self) -> Vec<Token> {
+    pub fn scan_tokens(&mut self) -> &Vec<Token> {
         while !self.is_at_end() {
             self.start = self.current;
             self.scan_token();
         }
 
         self.tokens.push(Token::new(TokenType::EOF, String::new(), None, self.line));
-        return self.tokens.clone();
+        return &self.tokens;
     }
 
     fn is_at_end(&self) -> bool {
@@ -38,7 +40,6 @@ impl Scanner {
 
     fn scan_token(&mut self) {
         let c = self.advance();
-        let mut lox = Mini::new();
 
         match c {
             '(' => self.add_token(TokenType::LParen),
@@ -118,7 +119,7 @@ impl Scanner {
                 } else if self.is_alpha(c) {
                     self.identifier();
                 } else {
-                    lox.error(self.line, "Unexpected character.");
+                    self.mini.error(self.line, "Unexpected character.");
                 }
             }
         }
@@ -135,7 +136,27 @@ impl Scanner {
         if token_type == TokenType::Nil {
             token_type = TokenType::Identifier;
         }
-        self.add_token(TokenType::Identifier);
+        self.add_token(token_type);
+    }
+
+    fn skip_multiline_comment(&mut self) {
+        todo!();
+        // while !self.is_at_end()  {
+        //     if self.peek() == '*' && self.peek_next() == '/' {
+        //         self.advance();
+        //         self.advance();
+        //     }
+
+        //     if self.peek() == '\n' {
+        //         self.line += 1;
+        //     }
+
+        //     self.advance();
+        // }
+
+        // if self.is_at_end() {
+        //     self.mini.error(self.line, "Unterminated multiline comment");
+        // }
     }
 
     fn number(&mut self) {
@@ -150,10 +171,11 @@ impl Scanner {
                 self.advance();
             }
         }
-        self.add_token(TokenType::Number);
 
         let sub = &self.source[self.start..self.current];
         let parse_sub: f64 = sub.parse().expect("Failed to parse.");
+
+        self.add_token_with_value(TokenType::Number, Some(parse_sub.to_string()));
     }
 
     fn string(&mut self) {
@@ -167,7 +189,7 @@ impl Scanner {
         }
 
         if self.is_at_end() {
-            mini.error(self.line, "Unterminated string");
+            self.mini.error(self.line, "Unterminated string");
             return;
         }
 
@@ -178,11 +200,7 @@ impl Scanner {
     }
 
     fn match_char(&mut self, expected: char) -> bool {
-        if self.is_at_end() {
-            return false;
-        }
-
-        if self.source.chars().nth(self.current).unwrap() != expected {
+        if self.is_at_end() || self.source[self.current..].chars().next().unwrap() != expected {
             return false;
         }
 
@@ -202,8 +220,11 @@ impl Scanner {
         return c >= '0' && c <= '9';
     }
 
-    fn advance(&self) -> char {
-        return self.source.chars().nth(self.current).unwrap();
+    fn advance(&mut self) -> char {
+        let ch = self.source[self.current..].chars().next().unwrap();
+        self.current += 1;
+
+        return ch;
     }
 
     fn add_token(&mut self, token_type: TokenType) {
@@ -220,7 +241,7 @@ impl Scanner {
             return '\0';
         }
 
-        return self.source.chars().nth(self.current).unwrap();
+        return self.source[self.current..].chars().next().unwrap();
     }
 
     fn peek_next(&self) -> char {
@@ -228,7 +249,7 @@ impl Scanner {
             return '\0';
         } 
 
-        return self.source.chars().nth(self.current + 1).unwrap();
+        return self.source[self.current + 1..].chars().next().unwrap();
     }
 
     fn keywords(&self, text: &str) -> TokenType {
@@ -258,19 +279,21 @@ impl Scanner {
             "int32" => TokenType::Int32,
             "int64" => TokenType::Int64,
             "int128" => TokenType::Int128,
-            "intn" => TokenType::IntN,
+            "int_n" => TokenType::IntN,
             "uint8" => TokenType::UInt8,
             "uint16" => TokenType::UInt16,
             "uint32" => TokenType::UInt32,
             "uint64" => TokenType::UInt64,
             "uint128" => TokenType::UInt128,
-            "uintn" => TokenType::UIntN,
+            "uint_n" => TokenType::UIntN,
             "float8" => TokenType::Float8,
             "float16" => TokenType::Float16,
             "float32" => TokenType::Float32,
             "float64" => TokenType::Float64,
             "float128" => TokenType::Float128,
-            "floatn" => TokenType::FloatN,
+            "float_n" => TokenType::FloatN,
+            "enum" => TokenType::Enum,
+            "type" => TokenType::Type,
             _ => TokenType::Identifier,
         }
     }

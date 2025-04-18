@@ -8,7 +8,7 @@ struct Person {
 }
 
 construct Person {
-    func new(age: uint16, name: string): Self {
+    func new(age: float16, name: string): Self {
         return Person { age, name };
     }
 }
@@ -21,7 +21,7 @@ struct User {
 }
 
 construct User {
-    func new(username: string, age: uint16, email: string): User {
+    func new(username: string, age: float16, email: string): User {
         return User {
             username: username,
             age: age,
@@ -32,9 +32,9 @@ construct User {
 
 
 func main() {
-    let person = Person.new(17, "John");
-    print("{} is {} years old.", person.name, person.age);
+    let person = Person.new(17.50, "John");
+    println("{} is {} years old.", person.name, person.age);
 
-    let user = User.new("johndoe", 17, "johndoe@gmail.com");
-    print("{} with email {} is {} years old.", user.username, user.age, user.email);
+    let user = User.new("johndoe", 17.5, "johndoe@gmail.com");
+    println("{} with email {} is {} years old.", user.username, user.age, user.email);
 }

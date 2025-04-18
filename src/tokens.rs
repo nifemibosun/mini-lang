@@ -17,7 +17,7 @@ pub enum TokenType {
     Greater, GreaterEqual,
     Less, LessEqual,
 
-    /// Literals.
+    // Literals.
     Identifier, String, Number,
 
     //keywords
@@ -28,6 +28,7 @@ pub enum TokenType {
     False, True, Or, And,
     Return, Let, Const,
     SelfLower, SelfUpper,
+    Enum, Type,
 
 
     // type keywords

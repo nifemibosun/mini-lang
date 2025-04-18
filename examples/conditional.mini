@@ -1,14 +1,14 @@
 func is_any_greater(a: int32, b: int32): bool {
 	if (a > b) {
-		print("A is greater than B");
+		println("A is greater than B");
 		return true;
 	} else if (b > a) {
-		print("B is greater than A");
+		println("B is greater than A");
 		return true;
 	} else {
-		print("A = B <=> B = A");
+		println("A = B <=> B = A"); // This mean that A = B implies B = A
 		return false;
 	}
 
-	print("Check completed.);
+	println("Check completed.);
 }
