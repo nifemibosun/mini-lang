@@ -263,7 +263,7 @@ impl Scanner {
     }
 
     fn lang_keyword(&self, text: &str) -> Option<TokenType> {
-        return match text {
+        match text {
             "struct" => Some(TokenType::Struct),
             "construct" => Some(TokenType::Construct),
             "if" => Some(TokenType::If),
@@ -285,11 +285,11 @@ impl Scanner {
             "Arr" => Some(TokenType::Array),
             "arr" => Some(TokenType::ArrayLiteral),
             _ => None
-        };
+        }
     }
 
     fn type_keyword(&self, text: &str) -> Option<TokenType> {
-        return match text {
+        match text {
             "nil" => Some(TokenType::Nil),
             "bool" => Some(TokenType::Boolean),
             "char" => Some(TokenType::Char),
@@ -313,6 +313,6 @@ impl Scanner {
             "float128" => Some(TokenType::Float128),
             "float_n" => Some(TokenType::FloatN),
             _ => None
-        };
+        }
     }
 }
