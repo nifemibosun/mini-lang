@@ -270,6 +270,7 @@ impl Scanner {
             "else" => Some(TokenType::Else),
             "true" => Some(TokenType::True),
             "false" => Some(TokenType::False),
+            "nil" => Some(TokenType::Nil),
             "for" => Some(TokenType::For),
             "func" => Some(TokenType:: Func),
             "return" => Some(TokenType::Return),
@@ -284,13 +285,13 @@ impl Scanner {
             "type" => Some(TokenType::Type),
             "Arr" => Some(TokenType::Array),
             "arr" => Some(TokenType::ArrayLiteral),
+            "import" => Some(TokenType::Import),
             _ => None
         }
     }
 
     fn type_keyword(&self, text: &str) -> Option<TokenType> {
         match text {
-            "nil" => Some(TokenType::Nil),
             "bool" => Some(TokenType::Boolean),
             "char" => Some(TokenType::Char),
             "string" => Some(TokenType::Str),
