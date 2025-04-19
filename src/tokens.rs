@@ -21,7 +21,7 @@ pub enum TokenType {
     Identifier, String, Number,
 
     //keywords
-    If, Else,
+    If, Else, Import,
     While, For, Loop,
     Struct, Construct,
     Func, Public,
