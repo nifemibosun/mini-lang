@@ -179,8 +179,6 @@ impl Scanner {
     }
 
     fn string(&mut self) {
-        let mut mini = Mini::new();
-
         while self.peek() != '"' && !self.is_at_end() {
             if self.peek() == '\n' {
                 self.line += 1;
@@ -253,48 +251,68 @@ impl Scanner {
     }
 
     fn keywords(&self, text: &str) -> TokenType {
-        match text {
-            "struct" => TokenType::Struct,
-            "construct" => TokenType::Construct,
-            "if" => TokenType::If,
-            "else" => TokenType::Else,
-            "true" => TokenType::True,
-            "false" => TokenType::False,
-            "for" => TokenType::For,
-            "func" => TokenType:: Func,
-            "return" => TokenType::Return,
-            "self" => TokenType::SelfLower,
-            "Self" => TokenType::SelfUpper,
-            "let" => TokenType::Let,
-            "const" => TokenType::Const,
-            "while" => TokenType::While,
-            "loop" => TokenType::Loop,
-            "pub" => TokenType::Public,
-            "nil" => TokenType::Nil,
-            "bool" => TokenType::Boolean,
-            "char" => TokenType::Char,
-            "string" => TokenType::Str,
-            "int8" => TokenType::Int8,
-            "int16" => TokenType::Int16,
-            "int32" => TokenType::Int32,
-            "int64" => TokenType::Int64,
-            "int128" => TokenType::Int128,
-            "int_n" => TokenType::IntN,
-            "uint8" => TokenType::UInt8,
-            "uint16" => TokenType::UInt16,
-            "uint32" => TokenType::UInt32,
-            "uint64" => TokenType::UInt64,
-            "uint128" => TokenType::UInt128,
-            "uint_n" => TokenType::UIntN,
-            "float8" => TokenType::Float8,
-            "float16" => TokenType::Float16,
-            "float32" => TokenType::Float32,
-            "float64" => TokenType::Float64,
-            "float128" => TokenType::Float128,
-            "float_n" => TokenType::FloatN,
-            "enum" => TokenType::Enum,
-            "type" => TokenType::Type,
-            _ => TokenType::Identifier,
+        if let Some(token_type) = self.lang_keyword(text) {
+            return token_type;
         }
+
+        if let Some(token_type) = self.type_keyword(text)  {
+            return token_type;
+        }
+
+        TokenType::Identifier
+    }
+
+    fn lang_keyword(&self, text: &str) -> Option<TokenType> {
+        return match text {
+            "struct" => Some(TokenType::Struct),
+            "construct" => Some(TokenType::Construct),
+            "if" => Some(TokenType::If),
+            "else" => Some(TokenType::Else),
+            "true" => Some(TokenType::True),
+            "false" => Some(TokenType::False),
+            "for" => Some(TokenType::For),
+            "func" => Some(TokenType:: Func),
+            "return" => Some(TokenType::Return),
+            "self" => Some(TokenType::SelfLower),
+            "Self" => Some(TokenType::SelfUpper),
+            "let" => Some(TokenType::Let),
+            "const" => Some(TokenType::Const),
+            "while" => Some(TokenType::While),
+            "loop" => Some(TokenType::Loop),
+            "pub" => Some(TokenType::Public),
+            "enum" => Some(TokenType::Enum),
+            "type" => Some(TokenType::Type),
+            "Arr" => Some(TokenType::Array),
+            "arr" => Some(TokenType::ArrayLiteral),
+            _ => None
+        };
+    }
+
+    fn type_keyword(&self, text: &str) -> Option<TokenType> {
+        return match text {
+            "nil" => Some(TokenType::Nil),
+            "bool" => Some(TokenType::Boolean),
+            "char" => Some(TokenType::Char),
+            "string" => Some(TokenType::Str),
+            "int8" => Some(TokenType::Int8),
+            "int16" => Some(TokenType::Int16),
+            "int32" => Some(TokenType::Int32),
+            "int64" => Some(TokenType::Int64),
+            "int128" => Some(TokenType::Int128),
+            "int_n" => Some(TokenType::IntN),
+            "uint8" => Some(TokenType::UInt8),
+            "uint16" => Some(TokenType::UInt16),
+            "uint32" => Some(TokenType::UInt32),
+            "uint64" => Some(TokenType::UInt64),
+            "uint128" => Some(TokenType::UInt128),
+            "uint_n" => Some(TokenType::UIntN),
+            "float8" => Some(TokenType::Float8),
+            "float16" => Some(TokenType::Float16),
+            "float32" => Some(TokenType::Float32),
+            "float64" => Some(TokenType::Float64),
+            "float128" => Some(TokenType::Float128),
+            "float_n" => Some(TokenType::FloatN),
+            _ => None
+        };
     }
 }

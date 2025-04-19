@@ -29,6 +29,7 @@ pub enum TokenType {
     Return, Let, Const,
     SelfLower, SelfUpper,
     Enum, Type,
+    Array, ArrayLiteral,
 
 
     // type keywords
