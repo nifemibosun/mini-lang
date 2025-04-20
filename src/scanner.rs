@@ -3,11 +3,11 @@ use crate::mini::Mini;
 
 #[allow(unused)]
 pub struct Scanner {
-    source: String,
-    tokens: Vec<Token>,
-    start: usize,
-    current: usize,
-    line: usize,
+    pub chars: Vec<char>,
+    pub tokens: Vec<Token>,
+    pub start: usize,
+    pub current: usize,
+    pub line: usize,
     mini: Mini
 }
 
@@ -15,7 +15,7 @@ pub struct Scanner {
 impl Scanner {
     pub fn new(source: String) -> Self {
         Self {
-            source,
+            chars: source.chars().collect(),
             tokens: Vec::new(),
             start: 0,
             current: 0,
@@ -35,7 +35,7 @@ impl Scanner {
     }
 
     fn is_at_end(&self) -> bool {
-        self.current >= self.source.len()
+        self.current >= self.chars.len()
     }
 
     fn scan_token(&mut self) {
@@ -101,6 +101,8 @@ impl Scanner {
                     while self.peek() != '\n' && !self.is_at_end() {
                         self.advance();
                     }
+                } else if self.match_char('*') {
+                    self.skip_multiline_comment();
                 } else {
                     self.add_token(TokenType::Slash);
                 }
@@ -109,7 +111,7 @@ impl Scanner {
             '\n' => self.line += 1,
             '"' => self.string(),
             '|' => {
-                if self.match_char('|') && self.peek() == ' ' {
+                if self.match_char('|') {
                     self.add_token(TokenType::Or);
                 }
             }
@@ -130,8 +132,8 @@ impl Scanner {
             self.advance();
         }
 
-        let text = &self.source[self.start..self.current];
-        let mut token_type = self.keywords(text);
+        let text: String = self.chars[self.start..self.current].iter().collect();
+        let mut token_type = self.keywords(&text);
 
         if token_type == TokenType::Nil {
             token_type = TokenType::Identifier;
@@ -140,23 +142,28 @@ impl Scanner {
     }
 
     fn skip_multiline_comment(&mut self) {
-        todo!();
-        // while !self.is_at_end()  {
-        //     if self.peek() == '*' && self.peek_next() == '/' {
-        //         self.advance();
-        //         self.advance();
-        //     }
+        let mut depth = 1;
 
-        //     if self.peek() == '\n' {
-        //         self.line += 1;
-        //     }
+        while depth > 0 && !self.is_at_end() {
+            if self.peek() == '/' && self.peek_next() == '*' {
+                self.advance();
+                self.advance();
+                depth += 1;
+            } else if self.peek() == '*' && self.peek_next() == '/' {
+                self.advance();
+                self.advance();
+                depth -= 1;
+            } else {
+                if self.peek() == '\n' {
+                    self.line += 1;
+                }
+                self.advance();
+            }
+        }
 
-        //     self.advance();
-        // }
-
-        // if self.is_at_end() {
-        //     self.mini.error(self.line, "Unterminated multiline comment");
-        // }
+        if depth > 0 {
+            self.mini.error(self.line, "Unterminated multiline comment");
+        }
     }
 
     fn number(&mut self) {
@@ -172,10 +179,10 @@ impl Scanner {
             }
         }
 
-        let sub = &self.source[self.start..self.current];
-        let parse_sub: f64 = sub.parse().expect("Failed to parse.");
+        let text: String = self.chars[self.start..self.current].iter().collect();
+        let value: f64 = text.parse().expect("Failed to parse.");
 
-        self.add_token_with_value(TokenType::Number, Some(parse_sub.to_string()));
+        self.add_token_with_value(TokenType::Number, Some(value.to_string()));
     }
 
     fn string(&mut self) {
@@ -193,12 +200,12 @@ impl Scanner {
 
         self.advance();
 
-        let value = &self.source[self.start + 1..self.current - 1];
+        let value: String = self.chars[self.start + 1..self.current - 1].iter().collect();
         self.add_token_with_value(TokenType::String, Some(value.to_string()));
     }
 
     fn match_char(&mut self, expected: char) -> bool {
-        if self.is_at_end() || self.source[self.current..].chars().next().unwrap() != expected {
+        if self.is_at_end() || self.chars[self.current] != expected {
             return false;
         }
 
@@ -219,7 +226,7 @@ impl Scanner {
     }
 
     fn advance(&mut self) -> char {
-        let ch = self.source[self.current..].chars().next().unwrap();
+        let ch = self.chars[self.current];
         self.current += 1;
 
         return ch;
@@ -230,7 +237,7 @@ impl Scanner {
     }
 
     fn add_token_with_value(&mut self, token_type: TokenType, literal: Option<String>) {
-        let text = self.source[self.start..self.current].to_string();
+        let text = self.chars[self.start..self.current].iter().collect();
         self.tokens.push(Token::new(token_type, text, literal, self.line))
     }
 
@@ -239,15 +246,15 @@ impl Scanner {
             return '\0';
         }
 
-        return self.source[self.current..].chars().next().unwrap();
+        return self.chars[self.current];
     }
 
     fn peek_next(&self) -> char {
-        if self.current + 1 >= self.source.len() {
+        if self.current + 1 >= self.chars.len() {
             return '\0';
         } 
 
-        return self.source[self.current + 1..].chars().next().unwrap();
+        return self.chars[self.current + 1];
     }
 
     fn keywords(&self, text: &str) -> TokenType {
@@ -307,12 +314,9 @@ impl Scanner {
             "uint64" => Some(TokenType::UInt64),
             "uint128" => Some(TokenType::UInt128),
             "uint_n" => Some(TokenType::UIntN),
-            "float8" => Some(TokenType::Float8),
-            "float16" => Some(TokenType::Float16),
             "float32" => Some(TokenType::Float32),
             "float64" => Some(TokenType::Float64),
             "float128" => Some(TokenType::Float128),
-            "float_n" => Some(TokenType::FloatN),
             _ => None
         }
     }

@@ -7,7 +7,7 @@ func eval_for(name_arr: Arr<string>) {
         println("{}. {}", i, name_arr[i]);
     }
 
-    print("For loop complete.");
+    println("For loop complete.");
 }
 
 // using while-loop
@@ -24,7 +24,8 @@ func eval_while(name_arr: Arr<string>) {
 
 
 func main() {
-    let name_arr: Arr<string> = ["John", "Doe", "Fizz", "Buzz", "Bazz"];
+    //creating an array literal
+    let name_arr = arr!["John", "Doe", "Fizz", "Buzz", "Bazz"];
 
     eval_for(name_arr);
     eval_while(name_arr);

@@ -35,7 +35,7 @@ pub enum TokenType {
     // type keywords
     Int8, Int16, Int32, Int64, Int128, IntN,
     UInt8, UInt16, UInt32, UInt64, UInt128, UIntN,  
-    Float8, Float16, Float32, Float64, Float128, FloatN,
+    Float32, Float64, Float128,
     Boolean, Char, Str, Nil,
 
     //End of File
@@ -45,10 +45,10 @@ pub enum TokenType {
 #[allow(unused)]
 #[derive(Debug, Clone)]
 pub struct Token {
-    token_type: TokenType,
-    lexeme: String,
-    literal: Option<String>,
-    line: usize,
+    pub token_type: TokenType,
+    pub lexeme: String,
+    pub literal: Option<String>,
+    pub line: usize,
 }
 
 #[allow(unused)]

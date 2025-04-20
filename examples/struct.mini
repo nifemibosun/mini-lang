@@ -1,5 +1,11 @@
 // examples/struct.mini
-/* The Person struct has properties age and name. The construct keyword is used for adding methods to the struct. The new function is a constructor that initializes the struct properties. The new keyword can either return Self or the name of the struct(i.e User). In the main function, I instantiate person with age 17 and name "John" and print the properties.*/
+/* 
+    The Person struct has properties age and name. 
+    The construct keyword is used for adding methods to the struct. 
+    The new function is a constructor that initializes the struct properties. 
+    The new keyword can either return Self or the name of the struct(i.e User). 
+    In the main function, I instantiate person with age 17 and name "John" and print the properties.
+*/
 
 
 struct Person {
