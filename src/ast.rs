@@ -1,5 +1,29 @@
 use crate::tokens::Token;
 
+//Visibility 
+#[allow(unused)]
+#[derive(Debug, Clone, PartialEq)]
+pub enum Visibility {
+    Public,
+    Private,
+}
+
+//Advanced types
+#[allow(unused)]
+#[derive(Debug, Clone)]
+pub enum Type {
+    Named(String),                      // int32, bool, MyType
+    Pointer(Box<Type>),                // *int32
+    Reference(Box<Type>),              // &int32
+    MutableReference(Box<Type>),       // &mut int32
+    Array(Box<Type>, usize),           // [int8; 4]
+    Tuple(Vec<Type>),                  // (int32, float64)
+    Function(Vec<Type>, Box<Type>),    // fn(int32, float64) -> bool
+    Unit,                              // ()
+}
+
+//Literal Values
+#[allow(unused)]
 #[derive(Debug, Clone)]
 pub enum Literal {
     //Integers can be either signed or unsigned
@@ -29,35 +53,93 @@ pub enum Literal {
     Nil,
 }
 
-
+// Expressions
 #[allow(unused)]
 #[derive(Debug, Clone)]
 pub enum Expr {
     Literal(Literal),
     Variable(String),
     Unary {
-        operator: Token,
-        right: Box<Expr>
+        op: Token,
+        expr: Box<Expr>,
     },
     Binary {
         left: Box<Expr>,
-        operator: Token,
-        right: Box<Expr>
+        op: Token,
+        right: Box<Expr>,
     },
     Grouping(Box<Expr>),
     Assignment {
-        name: String,
-        content: Box<Expr>
+        target: Box<Expr>,   // variable, field, index, etc.
+        value: Box<Expr>,
     },
-    Call(Box<Expr>, Token, Vec<Expr>)
+    Call {
+        callee: Box<Expr>,
+        args: Vec<Expr>,
+    },
+    Index {
+        target: Box<Expr>,
+        index: Box<Expr>,
+    },
+    Field {
+        base: Box<Expr>,
+        name: String,
+    },
+    Cast {
+        expr: Box<Expr>,
+        typ: Type,
+    },
+    AddressOf(Box<Expr>),
+    Deref(Box<Expr>),
+    Tuple(Vec<Expr>),
+    Lambda {
+        params: Vec<String>,
+        body: Vec<Stmt>,
+    },
 }
 
+// Patterns (used in match)
+#[allow(unused)]
+#[derive(Debug, Clone)]
+pub enum Pattern {
+    Wildcard,
+    Literal(Literal),
+    Variable(String),
+    Tuple(Vec<Pattern>),
+    Struct {
+        name: String,
+        fields: Vec<(String, Pattern)>,
+    },
+    EnumVariant {
+        name: String,
+        inner: Option<Box<Pattern>>,
+    },
+}
+
+// Statements
+#[allow(unused)]
 #[derive(Debug, Clone)]
 pub enum Stmt {
+    Let {
+        name: String,
+        typ: Option<Type>,
+        value: Option<Expr>,
+        is_mutable: bool,
+    },
+    Const {
+        name: String,
+        typ: Type,
+        value: Expr,
+    },
+    Static {
+        name: String,
+        typ: Type,
+        value: Expr,
+        mutable: bool,
+    },
     Expression(Expr),
-    Println(Expr),
-    Let(String, Option<Expr>),
-    Const(String, Option<Expr>),
+    Print(Expr),
+    Return(Option<Expr>),
     Block(Vec<Stmt>),
     If {
         condition: Expr,
@@ -68,13 +150,59 @@ pub enum Stmt {
         condition: Expr,
         body: Box<Stmt>,
     },
+    For {
+        initializer: Option<Box<Stmt>>,
+        condition: Option<Expr>,
+        increment: Option<Expr>,
+        body: Box<Stmt>,
+    },
+    Break,
+    Continue,
+
+    Struct {
+        name: String,
+        fields: Vec<(String, Type)>,
+        visibility: Visibility,
+    },
+    Enum {
+        name: String,
+        variants: Vec<(String, Option<Type>)>,
+        visibility: Visibility,
+    },
+    Match {
+        expr: Expr,
+        arms: Vec<(Pattern, Stmt)>,
+    },
     Function {
         name: String,
-        params: Vec<String>,
-        body: Vec<Stmt>
+        params: Vec<(String, Type)>,
+        return_type: Option<Type>,
+        body: Vec<Stmt>,
+        visibility: Visibility,
     },
-    Return {
-        keyword: Token,
-        value: Option<Expr>,
+    ExternFunction {
+        name: String,
+        params: Vec<(String, Type)>,
+        return_type: Option<Type>,
     },
+    Trait {
+        name: String,
+        methods: Vec<Stmt>,
+        visibility: Visibility,
+    },
+    Impl {
+        trait_name: Option<String>,
+        type_name: String,
+        methods: Vec<Stmt>,
+        visibility: Visibility,
+    },
+    Module {
+        name: String,
+        declarations: Vec<Stmt>,
+        visibility: Visibility,
+    },
+    Import {
+        path: Vec<String>,
+    },
+    UnsafeBlock(Vec<Stmt>),
 }
