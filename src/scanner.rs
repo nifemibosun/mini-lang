@@ -183,7 +183,7 @@ impl Scanner {
         }
 
         let text: String = self.chars[self.start..self.current].iter().collect();
-        let mut token_type = self.keywords.get(&text).unwrap_or(&TokenType::Identifier).clone();
+        let token_type = *self.keywords.get(&text).unwrap_or(&TokenType::Identifier);
 
         self.add_token(token_type);
     }
