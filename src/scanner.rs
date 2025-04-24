@@ -1,4 +1,4 @@
-use std::collections::Hashmap;
+use std::collections::HashMap;
 
 use crate::tokens::{ TokenType, Token };
 use crate::mini::Mini;
@@ -11,7 +11,7 @@ pub struct Scanner {
     pub current: usize,
     pub line: usize,
     mini: Mini,
-    keywords: Hashmap<String, TokenType>
+    keywords: HashMap<String, TokenType>
 }
 
 #[allow(unused)]
@@ -183,11 +183,8 @@ impl Scanner {
         }
 
         let text: String = self.chars[self.start..self.current].iter().collect();
-        let mut token_type = self.keywords(&text);
+        let mut token_type = self.keywords.get(&text).unwrap_or(&TokenType::Identifier).clone();
 
-        if token_type == TokenType::Nil {
-            token_type = TokenType::Identifier;
-        }
         self.add_token(token_type);
     }
 
@@ -231,7 +228,7 @@ impl Scanner {
 
         let text: String = self.chars[self.start..self.current].iter().collect();
         
-        match text.parse::<f64> {
+        match text.parse::<f64>() {
             Ok(value) => self.add_token_with_value(TokenType::Number, Some(value.to_string())),
             Err(_) => self.mini.error(self.line, "Invalid number format"),
         }
@@ -258,12 +255,11 @@ impl Scanner {
 
     fn match_char(&mut self, expected: char) -> bool {
         if self.is_at_end() || self.chars[self.current] != expected {
-            false
+            return false;
         }
 
         self.current += 1;
-        
-        true
+        return true;
     }
 
     fn is_alphanum(&self, c: char) -> bool {
@@ -296,17 +292,17 @@ impl Scanner {
 
     fn peek(&self) -> char {
         if self.is_at_end() {
-            '\0'
+            return '\0';
         }
-
+        
         self.chars[self.current]
     }
 
     fn peek_next(&self) -> char {
         if self.current + 1 >= self.chars.len() {
-            '\0'
-        } 
-
+            return '\0';
+        }
+        
         self.chars[self.current + 1]
     }
 
