@@ -1,3 +1,5 @@
+use std::collections::Hashmap;
+
 use crate::tokens::{ TokenType, Token };
 use crate::mini::Mini;
 
@@ -8,19 +10,67 @@ pub struct Scanner {
     pub start: usize,
     pub current: usize,
     pub line: usize,
-    mini: Mini
+    mini: Mini,
+    keywords: Hashmap<String, TokenType>
 }
 
 #[allow(unused)]
 impl Scanner {
     pub fn new(source: String) -> Self {
+
+        let mut keywords = HashMap::new();
+        
+        // Language keywords
+        keywords.insert("struct".to_string(), TokenType::Struct);
+        keywords.insert("construct".to_string(), TokenType::Construct);
+        keywords.insert("if".to_string(), TokenType::If);
+        keywords.insert("else".to_string(), TokenType::Else);
+        keywords.insert("true".to_string(), TokenType::True);
+        keywords.insert("false".to_string(), TokenType::False);
+        keywords.insert("nil".to_string(), TokenType::Nil);
+        keywords.insert("for".to_string(), TokenType::For);
+        keywords.insert("func".to_string(), TokenType::Func);
+        keywords.insert("return".to_string(), TokenType::Return);
+        keywords.insert("self".to_string(), TokenType::SelfLower);
+        keywords.insert("Self".to_string(), TokenType::SelfUpper);
+        keywords.insert("let".to_string(), TokenType::Let);
+        keywords.insert("const".to_string(), TokenType::Const);
+        keywords.insert("while".to_string(), TokenType::While);
+        keywords.insert("loop".to_string(), TokenType::Loop);
+        keywords.insert("pub".to_string(), TokenType::Public);
+        keywords.insert("enum".to_string(), TokenType::Enum);
+        keywords.insert("type".to_string(), TokenType::Type);
+        keywords.insert("Arr".to_string(), TokenType::Array);
+        keywords.insert("arr".to_string(), TokenType::ArrayLiteral);
+        keywords.insert("import".to_string(), TokenType::Import);
+        
+        // Type keywords
+        keywords.insert("bool".to_string(), TokenType::Boolean);
+        keywords.insert("char".to_string(), TokenType::Char);
+        keywords.insert("string".to_string(), TokenType::Str);
+        keywords.insert("int8".to_string(), TokenType::Int8);
+        keywords.insert("int16".to_string(), TokenType::Int16);
+        keywords.insert("int32".to_string(), TokenType::Int32);
+        keywords.insert("int64".to_string(), TokenType::Int64);
+        keywords.insert("int128".to_string(), TokenType::Int128);
+        keywords.insert("int_n".to_string(), TokenType::IntN);
+        keywords.insert("uint8".to_string(), TokenType::UInt8);
+        keywords.insert("uint16".to_string(), TokenType::UInt16);
+        keywords.insert("uint32".to_string(), TokenType::UInt32);
+        keywords.insert("uint64".to_string(), TokenType::UInt64);
+        keywords.insert("uint128".to_string(), TokenType::UInt128);
+        keywords.insert("uint_n".to_string(), TokenType::UIntN);
+        keywords.insert("float32".to_string(), TokenType::Float32);
+        keywords.insert("float64".to_string(), TokenType::Float64);
+        
         Self {
             chars: source.chars().collect(),
             tokens: Vec::new(),
             start: 0,
             current: 0,
             line: 1,
-            mini: Mini::new()
+            mini: Mini::new(),
+            keywords
         }
     }
 
@@ -31,7 +81,7 @@ impl Scanner {
         }
 
         self.tokens.push(Token::new(TokenType::EOF, String::new(), None, self.line));
-        return &self.tokens;
+        &self.tokens
     }
 
     fn is_at_end(&self) -> bool {
@@ -39,15 +89,15 @@ impl Scanner {
     }
 
     fn scan_token(&mut self) {
-        let c = self.advance();
+        let current_char = self.advance();
 
-        match c {
+        match current_char {
             '(' => self.add_token(TokenType::LParen),
             ')' => self.add_token(TokenType::RParen),
             '{' => self.add_token(TokenType::LBrace),
             '}' => self.add_token(TokenType::RBrace),
-            '[' => self.add_token(TokenType::RSquare),
-            ']' => self.add_token(TokenType::LSquare),
+            '[' => self.add_token(TokenType::LSquare),
+            ']' => self.add_token(TokenType::RSquare),
             ',' => self.add_token(TokenType::Comma),
             '.' => self.add_token(TokenType::Dot),
             '-' => self.add_token(TokenType::Minus),
@@ -116,9 +166,9 @@ impl Scanner {
                 }
             }
             _ => {
-                if self.is_digit(c) {
+                if self.is_digit(current_char) {
                     self.number();
-                } else if self.is_alpha(c) {
+                } else if self.is_alpha(current_char) {
                     self.identifier();
                 } else {
                     self.mini.error(self.line, "Unexpected character.");
@@ -180,9 +230,11 @@ impl Scanner {
         }
 
         let text: String = self.chars[self.start..self.current].iter().collect();
-        let value: f64 = text.parse().expect("Failed to parse.");
-
-        self.add_token_with_value(TokenType::Number, Some(value.to_string()));
+        
+        match text.parse::<f64> {
+            Ok(value) => self.add_token_with_value(TokenType::Number, Some(value.to_string())),
+            Err(_) => self.mini.error(self.line, "Invalid number format"),
+        }
     }
 
     fn string(&mut self) {
@@ -206,30 +258,31 @@ impl Scanner {
 
     fn match_char(&mut self, expected: char) -> bool {
         if self.is_at_end() || self.chars[self.current] != expected {
-            return false;
+            false
         }
 
         self.current += 1;
-        return true;
+        
+        true
     }
 
-    fn is_alphanum(&mut self, c: char) -> bool {
-        return self.is_alpha(c) || self.is_digit(c);
+    fn is_alphanum(&self, c: char) -> bool {
+        self.is_alpha(c) || self.is_digit(c)
     }
 
-    fn is_alpha(&mut self, c: char) -> bool {
-        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+    fn is_alpha(&self, c: char) -> bool {
+        (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'
     }
 
-    fn is_digit(&mut self, c: char) -> bool {
-        return c >= '0' && c <= '9';
+    fn is_digit(&self, c: char) -> bool {
+        c >= '0' && c <= '9'
     }
 
     fn advance(&mut self) -> char {
         let ch = self.chars[self.current];
         self.current += 1;
 
-        return ch;
+        ch
     }
 
     fn add_token(&mut self, token_type: TokenType) {
@@ -243,81 +296,24 @@ impl Scanner {
 
     fn peek(&self) -> char {
         if self.is_at_end() {
-            return '\0';
+            '\0'
         }
 
-        return self.chars[self.current];
+        self.chars[self.current]
     }
 
     fn peek_next(&self) -> char {
         if self.current + 1 >= self.chars.len() {
-            return '\0';
+            '\0'
         } 
 
-        return self.chars[self.current + 1];
+        self.chars[self.current + 1]
     }
 
     fn keywords(&self, text: &str) -> TokenType {
-        if let Some(token_type) = self.lang_keyword(text) {
-            return token_type;
-        }
-
-        if let Some(token_type) = self.type_keyword(text)  {
-            return token_type;
-        }
-
-        TokenType::Identifier
-    }
-
-    fn lang_keyword(&self, text: &str) -> Option<TokenType> {
-        match text {
-            "struct" => Some(TokenType::Struct),
-            "construct" => Some(TokenType::Construct),
-            "if" => Some(TokenType::If),
-            "else" => Some(TokenType::Else),
-            "true" => Some(TokenType::True),
-            "false" => Some(TokenType::False),
-            "nil" => Some(TokenType::Nil),
-            "for" => Some(TokenType::For),
-            "func" => Some(TokenType:: Func),
-            "return" => Some(TokenType::Return),
-            "self" => Some(TokenType::SelfLower),
-            "Self" => Some(TokenType::SelfUpper),
-            "let" => Some(TokenType::Let),
-            "const" => Some(TokenType::Const),
-            "while" => Some(TokenType::While),
-            "loop" => Some(TokenType::Loop),
-            "pub" => Some(TokenType::Public),
-            "enum" => Some(TokenType::Enum),
-            "type" => Some(TokenType::Type),
-            "Arr" => Some(TokenType::Array),
-            "arr" => Some(TokenType::ArrayLiteral),
-            "import" => Some(TokenType::Import),
-            _ => None
-        }
-    }
-
-    fn type_keyword(&self, text: &str) -> Option<TokenType> {
-        match text {
-            "bool" => Some(TokenType::Boolean),
-            "char" => Some(TokenType::Char),
-            "string" => Some(TokenType::Str),
-            "int8" => Some(TokenType::Int8),
-            "int16" => Some(TokenType::Int16),
-            "int32" => Some(TokenType::Int32),
-            "int64" => Some(TokenType::Int64),
-            "int128" => Some(TokenType::Int128),
-            "int_n" => Some(TokenType::IntN),
-            "uint8" => Some(TokenType::UInt8),
-            "uint16" => Some(TokenType::UInt16),
-            "uint32" => Some(TokenType::UInt32),
-            "uint64" => Some(TokenType::UInt64),
-            "uint128" => Some(TokenType::UInt128),
-            "uint_n" => Some(TokenType::UIntN),
-            "float32" => Some(TokenType::Float32),
-            "float64" => Some(TokenType::Float64),
-            "float128" => Some(TokenType::Float128),
-            _ => None
+        match self.keywords.get(text) {
+            Some(token_type) => *token_type,
+            None => TokenType::Identifier,
         }
     }
 }
