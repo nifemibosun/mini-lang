@@ -8,18 +8,34 @@ pub enum Visibility {
     Private,
 }
 
+#[allow(unused)]
+#[derive(Debug, Clone)]
+pub struct TypeConstraint {
+    trait_name: String,
+    trait_params: Vec<String>,
+}
+
 //Advanced types
 #[allow(unused)]
 #[derive(Debug, Clone)]
 pub enum Type {
-    Named(String),                      // int32, bool, MyType
-    Pointer(Box<Type>),                // *int32
-    Reference(Box<Type>),              // &int32
-    MutableReference(Box<Type>),       // &mut int32
-    Array(Box<Type>, usize),           // [int8; 4]
-    Tuple(Vec<Type>),                  // (int32, float64)
-    Function(Vec<Type>, Box<Type>),    // fn(int32, float64) -> bool
-    Unit,                              // ()
+    Named(String),
+    Pointer(Box<Type>),
+    Reference(Box<Type>),
+    MutableReference(Box<Type>),
+    Array(Box<Type>, usize),
+    Tuple(Vec<Type>),
+    Function(Vec<Type>, Box<Type>),
+    Option(Box<Type>),
+    Result {
+        ok: Box<Type>,
+        err: Box<Type>,
+    },
+    Generic {
+        base: String,
+        params: Vec<Type>
+    },
+    Unit,               
 }
 
 //Literal Values
@@ -59,6 +75,9 @@ pub enum Literal {
 pub enum Expr {
     Literal(Literal),
     Variable(String),
+    TryExpr {
+        expr: Box<Expr>,
+    },
     Unary {
         op: Token,
         expr: Box<Expr>,
@@ -176,6 +195,8 @@ pub enum Stmt {
     Function {
         name: String,
         params: Vec<(String, Type)>,
+        type_params: Vec<String>,
+        type_constraint: Vec<(String, Vec<TypeConstraint>)>
         return_type: Option<Type>,
         body: Vec<Stmt>,
         visibility: Visibility,
@@ -188,11 +209,15 @@ pub enum Stmt {
     Trait {
         name: String,
         methods: Vec<Stmt>,
+        type_params: Vec<String>,
+        super_traits: Vec<String>,
         visibility: Visibility,
     },
-    Impl {
+    Construct {
         trait_name: Option<String>,
         type_name: String,
+        type_params: Vec(String),
+        type_constraints: Vec<(String, Vec<TypeConstraint>)>,
         methods: Vec<Stmt>,
         visibility: Visibility,
     },
@@ -204,5 +229,11 @@ pub enum Stmt {
     Import {
         path: Vec<String>,
     },
+    TryCatch {
+        try_block: Vec<Stmt>,
+        catch_name: String,
+        catch_type: Type,
+        catch_block: Vec<Stmt>,
+    }
     UnsafeBlock(Vec<Stmt>),
 }
