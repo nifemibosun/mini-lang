@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::scanner::token::{ Token, TokenType };
 use crate::MiniState;
 
@@ -9,10 +11,38 @@ pub struct Scanner<'a> {
     start: usize,
     current: usize,
     line: usize,
+    keywords: HashMap<&'static str, TokenType>,
 }
 
 impl<'a> Scanner<'a> {
     pub fn new(source: &'a str, state: &'a mut MiniState,)-> Self {
+        let mut keywords = HashMap::new();
+
+        keywords.insert("if", TokenType::If);
+        keywords.insert("else", TokenType::Else);
+        keywords.insert("while", TokenType::While);
+        keywords.insert("func", TokenType::Func);
+        keywords.insert("return", TokenType::Return);
+        keywords.insert("let", TokenType::Let);
+        keywords.insert("const", TokenType::Const);
+        keywords.insert("mut", TokenType::Mut);
+        keywords.insert("true", TokenType::True);
+        keywords.insert("false", TokenType::False);
+        keywords.insert("println", TokenType::PrintLn);
+        keywords.insert("match", TokenType::Match);
+        keywords.insert("import", TokenType::Import);
+        keywords.insert("for", TokenType::For);
+        keywords.insert("in", TokenType::In);
+        keywords.insert("struct", TokenType::Struct);
+        keywords.insert("enum", TokenType::Enum);
+        keywords.insert("trait", TokenType::Trait);
+        keywords.insert("Self", TokenType::SelfUpper);
+        keywords.insert("self", TokenType::SelfLower);
+        keywords.insert("construct", TokenType::Construct);
+        keywords.insert("loop", TokenType::Loop);
+        keywords.insert("await", TokenType::Await);
+        keywords.insert("async", TokenType::Async);
+
         Scanner { 
             source,
             state,
@@ -20,6 +50,7 @@ impl<'a> Scanner<'a> {
             start: 0,
             current: 0,
             line: 1,
+            keywords,
         }
     }
 
@@ -170,7 +201,7 @@ impl<'a> Scanner<'a> {
         self.source.chars().nth(self.current + 1).unwrap()
     }
 
-    fn single_line_comment(&self) {
+    fn single_line_comment(&mut self) {
         while self.peek() != '\n' && !self.is_at_end() {
             self.advance();
         }
@@ -185,7 +216,12 @@ impl<'a> Scanner<'a> {
             self.advance();
         }
 
-        self.add_token(TokenType::Identifier);
+        let text = &self.source[self.start..self.current];
+        let token_type = self.keywords.get(text);
+
+        if token_type == None {
+            self.add_token(TokenType::Identifier);
+        }
     }
 
     fn is_alpha(&self, c: char)-> bool {
@@ -215,7 +251,7 @@ impl<'a> Scanner<'a> {
         self.add_token_(TokenType::String, Some(value.to_string()));
     }
 
-    fn number(&self) {
+    fn number(&mut self) {
         while self.is_digit(self.peek()) {
             self.advance();
         }
@@ -235,8 +271,10 @@ impl<'a> Scanner<'a> {
         self.current >= self.source.len()
     }
 
-    fn advance(&self)-> char {
-        self.source.chars().nth(self.current + 1).unwrap()
+    fn advance(&mut self)-> char {
+        let c = self.source.chars().nth(self.current + 1).unwrap();
+        self.current += 1;
+        c
     }
 
     fn add_token(&mut self, token_type: TokenType) {
