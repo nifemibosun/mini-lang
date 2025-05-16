@@ -1,3 +1,4 @@
+#![allow(unused)]
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
     // Simple tokens
@@ -15,7 +16,6 @@ pub enum TokenType {
     // multi tokens
     ColonColon,
     
-
     // Operators
     Plus,
     Minus,
@@ -24,7 +24,10 @@ pub enum TokenType {
     Equal,
     PlusEqual,
     MinusEqual,
+    StarEqual,
+    SlashEqual,
     BangEqual,
+    EqualEqual,
     LessThan,
     GreaterThan,
     LessEqual,
@@ -32,14 +35,19 @@ pub enum TokenType {
 
 
     // Literals
-    Identifier(String),
-    Number(f64),
-    String(String),
+    Identifier,
+    Number,
+    String,
     
-    // Binary operators
+    // Logical operators
     And,
     Or,
     Bang,
+
+    // Bitwise operator
+    BitAnd,
+    BitOr,
+    XNor,
 
     // Keywords
     If,
@@ -65,9 +73,7 @@ pub enum TokenType {
     Construct,
     Loop,
     Await,
-
-
-
+    Async,
 
     // Type keywords
     Int8,
@@ -100,27 +106,27 @@ pub enum TokenType {
 
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Token {
-    pub token_type: TokenType,
-    pub lexeme: String,
-    pub line: usize,
-    pub column: usize,
+pub struct Token<'a> {
+    token_type: TokenType,
+    lexeme: &'a str,
+    literal: Option<String>,
+    line: usize,
 }
 
-impl Token {
-    pub fn new(token_type: TokenType, lexeme: String, line: usize, column: usize) -> Self {
+impl<'a> Token<'a> {
+    pub fn new(token_type: TokenType, lexeme: &'a str, literal: Option<String>, line: usize,) -> Self {
         Token {
             token_type,
             lexeme,
+            literal,
             line,
-            column,
         }
     }
 
     pub fn to_string(&self) -> String {
         format!(
-            "Token {{ type: {:?}, lexeme: {}, line: {}, column: {} }}",
-            self.token_type, self.lexeme, self.line, self.column
+            "Token {{ type: {:?}, lexeme: {}, literal: {:?}, line: {} }}",
+            self.token_type, self.lexeme, self.literal, self.line,
         )
     }
 }
