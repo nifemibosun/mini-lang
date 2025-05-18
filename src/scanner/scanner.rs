@@ -18,6 +18,7 @@ impl<'a> Scanner<'a> {
     pub fn new(source: &'a str, state: &'a mut MiniState,)-> Self {
         let mut keywords = HashMap::new();
 
+        // Language Keywords
         keywords.insert("if", TokenType::If);
         keywords.insert("else", TokenType::Else);
         keywords.insert("while", TokenType::While);
@@ -42,6 +43,27 @@ impl<'a> Scanner<'a> {
         keywords.insert("loop", TokenType::Loop);
         keywords.insert("await", TokenType::Await);
         keywords.insert("async", TokenType::Async);
+        keywords.insert("priv", TokenType::Private);
+        keywords.insert("pub", TokenType::Public);
+
+
+        // Type Keywords
+        keywords.insert("bool", TokenType::Bool);
+        keywords.insert("char", TokenType::Char);
+        keywords.insert("int8", TokenType::Int8);
+        keywords.insert("int16", TokenType::Int16);
+        keywords.insert("int32", TokenType::Int32);
+        keywords.insert("int64", TokenType::Int64);
+        keywords.insert("int_n", TokenType::IntN);
+        keywords.insert("uint8", TokenType::UInt8);
+        keywords.insert("uint16", TokenType::UInt16);
+        keywords.insert("uint32", TokenType::UInt32);
+        keywords.insert("uint64", TokenType::UInt64);
+        keywords.insert("uint_n", TokenType::UIntN);
+        keywords.insert("float32", TokenType::Float32);
+        keywords.insert("float64", TokenType::Float64);
+        keywords.insert("int_n", TokenType::IntN);
+
 
         Scanner { 
             source,
@@ -168,7 +190,6 @@ impl<'a> Scanner<'a> {
                     self.state.error(self.line, "Unexpected character.");
                 }
             }
-
         }
     }
 
@@ -217,10 +238,10 @@ impl<'a> Scanner<'a> {
         }
 
         let text = &self.source[self.start..self.current];
-        let token_type = self.keywords.get(text);
 
-        if token_type == None {
-            self.add_token(TokenType::Identifier);
+        match self.keywords.get(text) {
+            Some(token_type) => self.add_token(token_type.clone()),
+            None => self.add_token(TokenType::Identifier)
         }
     }
 
@@ -243,6 +264,7 @@ impl<'a> Scanner<'a> {
 
         if self.is_at_end() {
             self.state.error(self.line, "Unterminated string.");
+            return;
         }
 
         self.advance();
@@ -264,7 +286,8 @@ impl<'a> Scanner<'a> {
             }
         }
 
-        self.source[self.start..self.current].parse::<f64>().unwrap();
+        let value = self.source[self.start..self.current].parse::<f64>().unwrap();
+        self.add_token_(TokenType::Number, Some(value.to_string()));
     }
 
     fn is_at_end(&self)-> bool {
@@ -272,7 +295,7 @@ impl<'a> Scanner<'a> {
     }
 
     fn advance(&mut self)-> char {
-        let c = self.source.chars().nth(self.current + 1).unwrap();
+        let c = self.source.chars().nth(self.current).unwrap();
         self.current += 1;
         c
     }
