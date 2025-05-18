@@ -1,4 +1,5 @@
 mod scanner;
+mod parser;
 
 use std::process::exit;
 use std::env;
@@ -7,8 +8,9 @@ use std::fs;
 
 use scanner::{ scanner::Scanner, token::Token };
 
+
 pub struct MiniState {
-    had_error: bool,
+    pub had_error: bool,
 }
 
 impl MiniState {

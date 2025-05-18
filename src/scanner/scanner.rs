@@ -62,8 +62,6 @@ impl<'a> Scanner<'a> {
         keywords.insert("uint_n", TokenType::UIntN);
         keywords.insert("float32", TokenType::Float32);
         keywords.insert("float64", TokenType::Float64);
-        keywords.insert("int_n", TokenType::IntN);
-
 
         Scanner { 
             source,
