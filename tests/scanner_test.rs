@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::scanner::Scanner;
-    use crate::scanner::token::{ Token, TokenType };
+    use mini::scanner::token::{ TokenType };
+    use mini::scanner::scanner::Scanner;
+    use mini::MiniState;
     
     fn create_mini_state()-> MiniState {
         MiniState::new()
@@ -13,7 +13,7 @@ mod tests {
         let source = "";
         let mut state = create_mini_state();
         let mut scanner = Scanner::new(source, &mut state);
-        let tokens = scanner.scan_tokens();
+        let (tokens, _) = scanner.scan_tokens();
         
         assert_eq!(tokens.len(), 1);
         assert_eq!(tokens[0].token_type, TokenType::EOF);
@@ -24,7 +24,7 @@ mod tests {
         let source = "(){},.-+;*/:";
         let mut state = create_mini_state();
         let mut scanner = Scanner::new(source, &mut state);
-        let tokens = scanner.scan_tokens();
+        let (tokens, _) = scanner.scan_tokens();
         
         let expected_types = vec![
             TokenType::LParen, TokenType::RParen, 
@@ -48,7 +48,7 @@ mod tests {
         let source = "== != <= >= :: += -= *= /=";
         let mut state = create_mini_state();
         let mut scanner = Scanner::new(source, &mut state);
-        let tokens = scanner.scan_tokens();
+        let (tokens, _) = scanner.scan_tokens();
         
         let expected_types = vec![
             TokenType::EqualEqual, TokenType::BangEqual, 
@@ -70,7 +70,7 @@ mod tests {
         let source = "|| && ! < >";
         let mut state = create_mini_state();
         let mut scanner = Scanner::new(source, &mut state);
-        let tokens = scanner.scan_tokens();
+        let (tokens, _) = scanner.scan_tokens();
         
         let expected_types = vec![
             TokenType::Or, TokenType::And, 
@@ -90,7 +90,7 @@ mod tests {
         let source = r#""hello world" "test""#;
         let mut state = create_mini_state();
         let mut scanner = Scanner::new(source, &mut state);
-        let tokens = scanner.scan_tokens();
+        let (tokens, _) = scanner.scan_tokens();
         
         assert_eq!(tokens.len(), 3);
         assert_eq!(tokens[0].token_type, TokenType::String);
@@ -104,7 +104,7 @@ mod tests {
         let source = "123 45.67";
         let mut state = create_mini_state();
         let mut scanner = Scanner::new(source, &mut state);
-        let tokens = scanner.scan_tokens();
+        let (tokens, _) = scanner.scan_tokens();
         
         assert_eq!(tokens.len(), 3);
         assert_eq!(tokens[0].token_type, TokenType::Number);
@@ -118,7 +118,7 @@ mod tests {
         let source = "if else while func return let const mut true false";
         let mut state = create_mini_state();
         let mut scanner = Scanner::new(source, &mut state);
-        let tokens = scanner.scan_tokens();
+        let (tokens, _) = scanner.scan_tokens();
         
         let expected_types = vec![
             TokenType::If, TokenType::Else, 
@@ -141,7 +141,7 @@ mod tests {
         let source = "bool int32 float64 uint8";
         let mut state = create_mini_state();
         let mut scanner = Scanner::new(source, &mut state);
-        let tokens = scanner.scan_tokens();
+        let (tokens, _) = scanner.scan_tokens();
         
         let expected_types = vec![
             TokenType::Bool, TokenType::Int32, 
@@ -161,7 +161,7 @@ mod tests {
         let source = "x y123 _test identifier";
         let mut state = create_mini_state();
         let mut scanner = Scanner::new(source, &mut state);
-        let tokens = scanner.scan_tokens();
+        let (tokens, _) = scanner.scan_tokens();
         
         let expected_types = vec![
             TokenType::Identifier, TokenType::Identifier, 
@@ -186,7 +186,7 @@ mod tests {
         let source = "// This is a comment\nx // Another comment";
         let mut state = create_mini_state();
         let mut scanner = Scanner::new(source, &mut state);
-        let tokens = scanner.scan_tokens();
+        let (tokens, _) = scanner.scan_tokens();
         
         assert_eq!(tokens.len(), 2);
         assert_eq!(tokens[0].token_type, TokenType::Identifier);
@@ -198,7 +198,7 @@ mod tests {
         let source = "   \t\r\n  x  \n  y  ";
         let mut state = create_mini_state();
         let mut scanner = Scanner::new(source, &mut state);
-        let tokens = scanner.scan_tokens();
+        let (tokens, _) = scanner.scan_tokens();
         
         assert_eq!(tokens.len(), 3);
         assert_eq!(tokens[0].token_type, TokenType::Identifier);
@@ -212,7 +212,7 @@ mod tests {
         let source = "x\ny\n\nz";
         let mut state = create_mini_state();
         let mut scanner = Scanner::new(source, &mut state);
-        let tokens = scanner.scan_tokens();
+        let (tokens, _) = scanner.scan_tokens();
         
         assert_eq!(tokens.len(), 4);
         assert_eq!(tokens[0].line, 1);
@@ -225,7 +225,7 @@ mod tests {
         let source = r#""unterminated"#;
         let mut state = create_mini_state();
         let mut scanner = Scanner::new(source, &mut state);
-        let tokens = scanner.scan_tokens();
+        let (tokens, _) = scanner.scan_tokens();
         
         assert_eq!(tokens.len(), 1);
         assert!(state.had_error);
@@ -241,19 +241,22 @@ mod tests {
             return fibonacci(n - 1) + fibonacci(n - 2);
         }
         
-        let mut x = 10;
-        println("Fibonacci sequence:");
-        while x > 0 {
-            println(fibonacci(x));
-            x -= 1;
+        func main() {
+            let mut x = 10;
+            
+            println("Fibonacci sequence:");
+            while x > 0 {
+                println(fibonacci(x));
+                x -= 1;
+            }
         }
         "#;
         
         let mut state = create_mini_state();
         let mut scanner = Scanner::new(source, &mut state);
-        let tokens = scanner.scan_tokens();
+        let (tokens, had_error) = scanner.scan_tokens();
         
-        assert!(!state.had_error);
+        assert!(!had_error);
         assert!(tokens.len() > 30);
         
         let func_index = tokens.iter().position(|t| t.token_type == TokenType::Func).unwrap();

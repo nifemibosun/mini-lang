@@ -15,7 +15,7 @@ pub struct Scanner<'a> {
 }
 
 impl<'a> Scanner<'a> {
-    pub fn new(source: &'a str, state: &'a mut MiniState,)-> Self {
+    pub fn new(source: &'a str, state: &'a mut MiniState) -> Self {
         let mut keywords = HashMap::new();
 
         // Language Keywords
@@ -74,14 +74,14 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    pub fn scan_tokens(&mut self)-> &Vec<Token> {
+    pub fn scan_tokens(&mut self)-> (&Vec<Token>, bool) {
         while !self.is_at_end() {
             self.start = self.current;
             self.scan_token();
         }
 
         self.tokens.push(Token::new(TokenType::EOF, "", None, self.line));
-        &self.tokens
+        (&self.tokens, self.state.had_error)
     }
 
     fn scan_token(&mut self) {

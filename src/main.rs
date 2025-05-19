@@ -6,27 +6,8 @@ use std::env;
 use std::io::{self, Write, BufRead, Result};
 use std::fs;
 
-use scanner::{ scanner::Scanner, token::Token };
-
-
-pub struct MiniState {
-    pub had_error: bool,
-}
-
-impl MiniState {
-    pub fn new() -> Self {
-        MiniState { had_error: false }
-    }
-    
-    pub fn error(&mut self, line: usize, message: &str) {
-        self.report(line, "", message);
-    }
-    
-    fn report(&mut self, line: usize, pos: &str, message: &str) {
-        eprintln!("[line {}] Error{}: {}", line, pos, message);
-        self.had_error = true;
-    }
-}
+use scanner::scanner::Scanner;
+use mini::MiniState;
 
 
 fn main() {
@@ -90,8 +71,8 @@ fn run_prompt(state: &mut MiniState) -> Result<()> {
 
 fn run(state: &mut MiniState, source: &str) {
     let mut scanner = Scanner::new(source, state);
-    let tokens: &Vec<Token> = scanner.scan_tokens();
-    
+    let (tokens, _) = scanner.scan_tokens();
+
     for token in tokens {
         println!("{:?}", token);
     }
