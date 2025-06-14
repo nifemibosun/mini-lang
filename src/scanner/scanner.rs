@@ -5,9 +5,9 @@ use crate::MiniState;
 
 
 pub struct Scanner<'a> {
-    source: &'a str,
+    source: Vec<char>,
     state: &'a mut MiniState,
-    tokens: Vec<Token<'a>>,
+    tokens: Vec<Token>,
     start: usize,
     current: usize,
     line: usize,
@@ -29,7 +29,6 @@ impl<'a> Scanner<'a> {
         keywords.insert("mut", TokenType::Mut);
         keywords.insert("true", TokenType::True);
         keywords.insert("false", TokenType::False);
-        keywords.insert("println", TokenType::PrintLn);
         keywords.insert("match", TokenType::Match);
         keywords.insert("import", TokenType::Import);
         keywords.insert("for", TokenType::For);
@@ -64,7 +63,7 @@ impl<'a> Scanner<'a> {
         keywords.insert("float64", TokenType::Float64);
 
         Scanner { 
-            source,
+            source: source.chars().collect(),
             state,
             tokens: Vec::new(),
             start: 0,
@@ -80,7 +79,7 @@ impl<'a> Scanner<'a> {
             self.scan_token();
         }
 
-        self.tokens.push(Token::new(TokenType::EOF, "", None, self.line));
+        self.tokens.push(Token::new(TokenType::EOF, "".to_string(), None, self.line));
         (&self.tokens, self.state.had_error)
     }
 
@@ -196,7 +195,7 @@ impl<'a> Scanner<'a> {
             return false;
         }
 
-        if self.source.chars().nth(self.current).unwrap() != expected {
+        if self.source[self.current] != expected {
             return false;
         }
 
@@ -209,7 +208,7 @@ impl<'a> Scanner<'a> {
             return '\0';
         }
 
-        self.source.chars().nth(self.current).unwrap()
+        self.source[self.current]
     }
 
     fn peek_next(&self)-> char {
@@ -217,7 +216,7 @@ impl<'a> Scanner<'a> {
             return '\0';
         }
 
-        self.source.chars().nth(self.current + 1).unwrap()
+        self.source[self.current + 1]
     }
 
     fn single_line_comment(&mut self) {
@@ -226,25 +225,25 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    fn is_digit(&self, c: char)-> bool {
-        c >= '0' && c <= '9'
-    }
-
     fn identifier(&mut self) {
         while self.is_alpha_num(self.peek()) {
             self.advance();
         }
 
-        let text = &self.source[self.start..self.current];
+        let text: String = self.source[self.start..self.current].iter().collect();
 
-        match self.keywords.get(text) {
+        match self.keywords.get(text.as_str()) {
             Some(token_type) => self.add_token(token_type.clone()),
             None => self.add_token(TokenType::Identifier)
         }
     }
 
-    fn is_alpha(&self, c: char)-> bool {
-        (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'
+    fn is_alpha(&self, c: char) -> bool {
+        c.is_alphabetic() || c == '_'
+    }
+
+    fn is_digit(&self, c: char) -> bool {
+        c.is_numeric()
     }
 
     fn is_alpha_num(&self, c: char)-> bool {
@@ -267,8 +266,8 @@ impl<'a> Scanner<'a> {
 
         self.advance();
 
-        let value = &self.source[self.start + 1..self.current - 1];
-        self.add_token_(TokenType::String, Some(value.to_string()));
+        let value = self.source[self.start + 1..self.current - 1].iter().collect();
+        self.add_token_(TokenType::String, Some(value));
     }
 
     fn number(&mut self) {
@@ -284,8 +283,14 @@ impl<'a> Scanner<'a> {
             }
         }
 
-        let value = self.source[self.start..self.current].parse::<f64>().unwrap();
-        self.add_token_(TokenType::Number, Some(value.to_string()));
+        let num_str: String = self.source[self.start..self.current].iter().collect();
+
+        match num_str.parse::<f64>() {
+            Ok(value) => self.add_token_(TokenType::Number, Some(value.to_string())),
+            Err(_) => {
+                self.state.error(self.line, "Invalid number format.");
+            }
+        }
     }
 
     fn is_at_end(&self)-> bool {
@@ -293,7 +298,7 @@ impl<'a> Scanner<'a> {
     }
 
     fn advance(&mut self)-> char {
-        let c = self.source.chars().nth(self.current).unwrap();
+        let c = self.source[self.current];
         self.current += 1;
         c
     }
@@ -303,7 +308,7 @@ impl<'a> Scanner<'a> {
     }
 
     fn add_token_(&mut self, token_type: TokenType, literal: Option<String>) {
-        let text = &self.source[self.start..self.current];
-        self.tokens.push(Token::new(token_type, text, literal, self.line));
+        let lexeme: String  = self.source[self.start..self.current].iter().collect();
+        self.tokens.push(Token::new(token_type, lexeme, literal, self.line));
     }
 }

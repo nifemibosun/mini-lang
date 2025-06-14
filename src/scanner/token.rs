@@ -60,7 +60,6 @@ pub enum TokenType {
     Mut,
     True,
     False,
-    PrintLn,
     Match,
     Import,
     For,
@@ -106,15 +105,15 @@ pub enum TokenType {
 
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Token<'a> {
+pub struct Token {
     pub token_type: TokenType,
-    pub lexeme: &'a str,
+    pub lexeme: String,
     pub literal: Option<String>,
     pub line: usize,
 }
 
-impl<'a> Token<'a> {
-    pub fn new(token_type: TokenType, lexeme: &'a str, literal: Option<String>, line: usize,) -> Self {
+impl Token {
+    pub fn new(token_type: TokenType, lexeme: String, literal: Option<String>, line: usize,) -> Self {
         Token {
             token_type,
             lexeme,
