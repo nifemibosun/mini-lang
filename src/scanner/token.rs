@@ -1,4 +1,25 @@
 #![allow(unused)]
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum LiteralTypes {
+    Int8,
+    Int16,
+    Int32,
+    Int64,
+    IntN,
+    UInt8,
+    UInt16,
+    UInt32,
+    UInt64,
+    UIntN,
+    Float32,
+    Float64,
+    StringType,
+    Bool,
+    Char,
+}
+
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
     // Simple tokens
@@ -75,21 +96,7 @@ pub enum TokenType {
     Async,
 
     // Type keywords
-    Int8,
-    Int16,
-    Int32,
-    Int64,
-    IntN,
-    UInt8,
-    UInt16,
-    UInt32,
-    UInt64,
-    UIntN,
-    Float32,
-    Float64,
-    StringType,
-    Bool,
-    Char,
+    Literal(LiteralTypes),
 
     // Access modifiers
     Public,

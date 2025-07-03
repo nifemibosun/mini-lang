@@ -49,113 +49,112 @@ pub enum Expr {
     },
 }
 
-#[derive(Debug, Clone)]
-pub enum Stmt {
-    Expression(Expr),
-    VarDecl(VariableDecl),
-    Return(Option<Expr>),
-    Block(Vec<Stmt>),
-    If {
-        condition: Expr,
-        then_branch: Box<Stmt>,
-        else_branch: Option<Box<Stmt>>,
-    },
-    While {
-        condition: Expr,
-        body: Box<Stmt>,
-    },
-    Loop {
-        body: Box<Stmt>,
-    },
-}
+// #[derive(Debug, Clone)]
+// pub enum Stmt {
+//     Expression(Expr),
+//     VarDecl(VariableDecl),
+//     Return(Option<Expr>),
+//     Block(Vec<Stmt>),
+//     If {
+//         condition: Expr,
+//         then_branch: Box<Stmt>,
+//         else_branch: Option<Box<Stmt>>,
+//     },
+//     While {
+//         condition: Expr,
+//         body: Box<Stmt>,
+//     },
+//     Loop {
+//         body: Box<Stmt>,
+//     },
+// }
 
 #[derive(Debug, Clone)]
 pub struct VariableDecl {
-    pub name: String,
-    pub is_mutable: bool,
     pub is_const: bool,
+    pub is_mutable: bool,
+    pub name: String,
     pub var_type: Option<String>,
     pub initializer: Option<Expr>,
 }
 
-#[derive(Debug, Clone)]
-pub struct FunctionParam {
-    pub name: String,
-    pub param_type: String,
-    pub is_mutable: bool,
-}
+// #[derive(Debug, Clone)]
+// pub struct FunctionParam {
+//     pub is_mutable: bool,
+//     pub name: String,
+//     pub param_type: String,
+// }
 
-#[derive(Debug, Clone)]
-pub struct FunctionDecl {
-    pub name: String,
-    pub params: Vec<FunctionParam>,
-    pub return_type: Option<String>,
-    pub body: Stmt,
-    pub is_async: bool,
-    pub visibility: Visibility,
-}
+// #[derive(Debug, Clone)]
+// pub struct FunctionDecl {
+//     pub visibility: Visibility,
+//     pub name: String,
+//     pub params: Vec<FunctionParam>,
+//     pub body: Stmt,
+//     pub return_type: Option<String>,
+// }
 
-#[derive(Debug, Clone)]
-pub struct StructDecl {
-    pub name: String,
-    pub fields: Vec<StructField>,
-    pub visibility: Visibility,
-}
+// #[derive(Debug, Clone)]
+// pub struct StructDecl {
+//     pub visibility: Visibility,
+//     pub name: String,
+//     pub fields: Vec<StructField>,
+// }
 
-#[derive(Debug, Clone)]
-pub struct StructField {
-    pub name: String,
-    pub field_type: String,
-    pub visibility: Visibility,
-}
+// #[derive(Debug, Clone)]
+// pub struct StructField {
+//     pub visibility: Visibility,
+//     pub name: String,
+//     pub field_type: String,
+// }
 
-#[derive(Debug, Clone)]
-pub struct EnumDecl {
-    pub name: String,
-    pub variants: Vec<EnumVariant>,
-    pub visibility: Visibility,
-}
+// #[derive(Debug, Clone)]
+// pub struct EnumDecl {
+//     pub visibility: Visibility,
+//     pub name: String,
+//     pub variants: Vec<EnumVariant>,
+// }
 
-#[derive(Debug, Clone)]
-pub struct EnumVariant {
-    pub name: String,
-    pub associated_types: Vec<String>,
-}
+// #[derive(Debug, Clone)]
+// pub struct EnumVariant {
+//     pub name: String,
+//     pub associated_types: Vec<String>,
+// }
 
-#[derive(Debug, Clone)]
-pub struct TraitDecl {
-    pub name: String,
-    pub methods: Vec<FunctionDecl>,
-    pub visibility: Visibility,
-}
+// #[derive(Debug, Clone)]
+// pub struct TraitDecl {
+//     pub visibility: Visibility,
+//     pub name: String,
+//     pub methods: Vec<FunctionDecl>,
+// }
 
-#[derive(Debug, Clone)]
-pub struct ConstructDecl {
-    pub target_type: String,
-    pub methods: Vec<FunctionDecl>,
-}
+// #[derive(Debug, Clone)]
+// pub struct ConstructDecl {
+//     pub target_type: String,
+//     pub methods: Vec<FunctionDecl>,
+// }
 
-#[derive(Debug, Clone)]
-pub struct ImportDecl {
-    pub path_segments: Vec<String>,
-    pub item_name: String,
-}
+// #[derive(Debug, Clone)]
+// pub struct ImportDecl {
+//     pub path_segments: Vec<String>,
+//     pub item_name: String,
+// }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Visibility {
-    Public,
-    Private,
-}
+// #[derive(Debug, Clone, PartialEq, Eq)]
+// pub enum Visibility {
+//     Public,
+//     Private,
+// }
 
 #[derive(Debug, Clone)]
 pub enum Declaration {
-    Function(FunctionDecl),
+//     Function(FunctionDecl),
     Variable(VariableDecl),
-    Struct(StructDecl),
-    Enum(EnumDecl),
-    Trait(TraitDecl),
-    Construct(ConstructDecl),
-    Import(ImportDecl),
+//     Struct(StructDecl),
+//     Enum(EnumDecl),
+//     Trait(TraitDecl),
+//     Construct(ConstructDecl),
+//     Import(ImportDecl),
 }
 
 #[derive(Debug, Clone)]

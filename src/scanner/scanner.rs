@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::scanner::token::{ Token, TokenType };
+use crate::scanner::token::{ LiteralTypes, TokenType, Token };
 use crate::MiniState;
 
 
@@ -47,20 +47,20 @@ impl<'a> Scanner<'a> {
 
 
         // Type Keywords
-        keywords.insert("bool", TokenType::Bool);
-        keywords.insert("char", TokenType::Char);
-        keywords.insert("int8", TokenType::Int8);
-        keywords.insert("int16", TokenType::Int16);
-        keywords.insert("int32", TokenType::Int32);
-        keywords.insert("int64", TokenType::Int64);
-        keywords.insert("int_n", TokenType::IntN);
-        keywords.insert("uint8", TokenType::UInt8);
-        keywords.insert("uint16", TokenType::UInt16);
-        keywords.insert("uint32", TokenType::UInt32);
-        keywords.insert("uint64", TokenType::UInt64);
-        keywords.insert("uint_n", TokenType::UIntN);
-        keywords.insert("float32", TokenType::Float32);
-        keywords.insert("float64", TokenType::Float64);
+        keywords.insert("bool", TokenType::Literal(LiteralTypes::Bool));
+        keywords.insert("char", TokenType::Literal(LiteralTypes::Char));
+        keywords.insert("int8", TokenType::Literal(LiteralTypes::Int8));
+        keywords.insert("int16", TokenType::Literal(LiteralTypes::Int16));
+        keywords.insert("int32", TokenType::Literal(LiteralTypes::Int32));
+        keywords.insert("int64", TokenType::Literal(LiteralTypes::Int64));
+        keywords.insert("int_n", TokenType::Literal(LiteralTypes::IntN));
+        keywords.insert("uint8", TokenType::Literal(LiteralTypes::UInt8));
+        keywords.insert("uint16", TokenType::Literal(LiteralTypes::UInt16));
+        keywords.insert("uint32", TokenType::Literal(LiteralTypes::UInt32));
+        keywords.insert("uint64", TokenType::Literal(LiteralTypes::UInt64));
+        keywords.insert("uint_n", TokenType::Literal(LiteralTypes::UIntN));
+        keywords.insert("float32", TokenType::Literal(LiteralTypes::Float32));
+        keywords.insert("float64", TokenType::Literal(LiteralTypes::Float64));
 
         Scanner { 
             source: source.chars().collect(),

@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use mini::scanner::token::{ TokenType };
+    use mini::scanner::token::{ LiteralTypes, TokenType };
     use mini::scanner::scanner::Scanner;
     use mini::MiniState;
     
@@ -144,8 +144,8 @@ mod tests {
         let (tokens, _) = scanner.scan_tokens();
         
         let expected_types = vec![
-            TokenType::Bool, TokenType::Int32, 
-            TokenType::Float64, TokenType::UInt8,
+            TokenType::Literal(LiteralTypes::Bool), TokenType::Literal(LiteralTypes::Int32), 
+            TokenType::Literal(LiteralTypes::Float64), TokenType::Literal(LiteralTypes::UInt8),
             TokenType::EOF
         ];
         

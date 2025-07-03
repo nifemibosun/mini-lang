@@ -14,17 +14,57 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let mut state = MiniState::new();
     
-    if args.len() > 2 {
-        eprintln!("Usage: mini run <filename.mini>");
+    if args.len() > 3 {
+        println!("Usage: mini <flag> <filename.mini>\n");
+        println!("Flags:");
+        println!("  --help | -h    Show this help message");
+        println!("  -v             Show version information");
+        println!("  run            Run the specified file");
+        println!("  comp           Compile the specified file");
         exit(64);
-    } else if args.len() == 2 {
-        if let Err(err) = run_file(&mut state, &args[1]) {
-            eprintln!("Error: {}", err);
-            exit(74);
+    } else if  args.len() == 2 {
+        match args[1].as_str() {
+            "--help" | "-h" => {
+                println!("Usage: mini <flag> <filename.mini>\n");
+                println!("Flags:");
+                println!("  --help | -h    Show this help message");
+                println!("  -v             Show version information");
+                println!("  run            Run the specified file");
+                println!("  comp           Compile the specified file");
+                exit(0);
+            }
+            "-v" => {
+                println!("mini v0.1.0");
+                exit(0);
+            }
+            _ => {
+                println!("Unknown flag: {}", args[1]);
+                exit(64);
+            }
+        }
+
+    } else if args.len() == 3 {
+        match args[1].as_str() {
+            "run" => {
+                if let Err(err) = run_file(&mut state, &args[2]) {
+                    println!("Error: {}", err);
+                    exit(74);
+                }
+            }
+            "comp" => {
+                if let Err(err) = run_file(&mut state, &args[2]) {
+                    println!("Error: {}", err);
+                    exit(74);
+                }
+            }
+            _ => {
+                println!("Unknown flag: {}", args[1]);
+                exit(64);
+            }
         }
     } else {
         if let Err(e) = run_prompt(&mut state) {
-            eprintln!("Error: {}", e);
+            println!("Error: {}", e);
             exit(74);
         }
     }
