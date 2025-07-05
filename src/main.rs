@@ -10,36 +10,43 @@ use scanner::scanner::Scanner;
 use mini::MiniState;
 
 
+fn help_msg() {
+    println!("Usage: mini <flag> <filename.mini>\n");
+    println!("Flags:");
+    println!("  --help          Shows this help message");
+    println!("  --version       Shows version information");
+    println!("  -h              Shows this help message");
+    println!("  -v              Shows version information");
+    println!("  run             Run the specified file");
+    println!("  comp            Compile the specified file");
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     let mut state = MiniState::new();
     
     if args.len() > 3 {
-        println!("Usage: mini <flag> <filename.mini>\n");
-        println!("Flags:");
-        println!("  --help | -h    Show this help message");
-        println!("  -v             Show version information");
-        println!("  run            Run the specified file");
-        println!("  comp           Compile the specified file");
+        help_msg();
         exit(64);
     } else if  args.len() == 2 {
         match args[1].as_str() {
             "--help" | "-h" => {
-                println!("Usage: mini <flag> <filename.mini>\n");
-                println!("Flags:");
-                println!("  --help | -h    Show this help message");
-                println!("  -v             Show version information");
-                println!("  run            Run the specified file");
-                println!("  comp           Compile the specified file");
+                help_msg();
                 exit(0);
             }
-            "-v" => {
+            "--version" | "-v" => {
                 println!("mini v0.1.0");
                 exit(0);
             }
             _ => {
-                println!("Unknown flag: {}", args[1]);
-                exit(64);
+                match args[1].as_str() {
+                    "run" => println!("Usage: mini run <filename.mini>"),
+                    "comp" => println!("Usage: mini comp <filename.mini>"),
+                    _ => {
+                        help_msg();
+                    }
+                }
+                // exit(64);
             }
         }
 
@@ -58,8 +65,21 @@ fn main() {
                 }
             }
             _ => {
-                println!("Unknown flag: {}", args[1]);
-                exit(64);
+                match args[1].as_str() {
+                    "--help" | "-h" => {
+                        match args[2].as_str() {
+                            "--version" | "-v" => println!("Usage: mini --version  |  mini -v"),
+                            "run" => println!("Usage: mini run <filename.mini>"),
+                            "comp" => println!("Usage: mini comp <filename.mini>"),
+                            _ => {
+                                help_msg();
+                            }
+                        }
+                    }
+                    _ => {
+                        help_msg();
+                    }
+                }
             }
         }
     } else {
