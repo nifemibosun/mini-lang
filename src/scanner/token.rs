@@ -34,15 +34,14 @@ pub enum TokenType {
     SemiColon,
     Dot,
 
-    // multi tokens
-    ColonColon,
-    
     // Operators
     Plus,
     Minus,
     Star,
     Slash,
     Equal,
+
+    // multi tokens
     PlusEqual,
     MinusEqual,
     StarEqual,
@@ -53,7 +52,7 @@ pub enum TokenType {
     GreaterThan,
     LessEqual,
     GreaterEqual,
-
+    ColonColon,
 
     // Literals
     Identifier,
