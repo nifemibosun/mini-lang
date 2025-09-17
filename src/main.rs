@@ -1,14 +1,11 @@
-// extern crate mini;
 mod scanner;
-mod parser;
 
 use std::process::exit;
 use std::env;
 use std::io::Result;
 use std::fs;
 
-use scanner::scanner::Scanner;
-use mini::MiniState;
+use scanner::{ Scanner, token::Position };
 
 
 fn help_msg() {
@@ -42,6 +39,26 @@ fn help_args(args: Vec<String>, state: &mut MiniState) {
     } else {
         help_msg();
         exit(64);
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct MiniState {
+    pub had_error: bool,
+}
+
+impl MiniState {
+    pub fn new() -> Self {
+        MiniState { had_error: false }
+    }
+    
+    pub fn error(&mut self, pos: Position, message: &str) {
+        self.report(pos, message);
+    }
+    
+    fn report(&mut self, pos: Position, message: &str) {
+        eprintln!("Error at {}:{}: {}", pos.line, pos.col, message);
+        self.had_error = true;
     }
 }
 

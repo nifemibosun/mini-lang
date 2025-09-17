@@ -1,75 +1,107 @@
 #![allow(unused)]
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum LiteralTypes {
-    Int8,
-    Int16,
-    Int32,
-    Int64,
-    IntN,
-    UInt8,
-    UInt16,
-    UInt32,
-    UInt64,
-    UIntN,
-    Float32,
-    Float64,
-    StringType,
-    Bool,
-    Char,
+pub enum Literal {
+    Int8(i8),
+    Int16(i16),
+    Int32(i32),
+    Int64(i64),
+    IntN(isize),
+    UInt8(u8),
+    UInt16(u16),
+    UInt32(u32),
+    UInt64(u64),
+    UIntN(usize),
+    Float32(f32),
+    Float64(f64),
+    String(String),
+    Bool(bool),
+    Char(char),
 }
 
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
-    // Simple tokens
+    /// "("
     LParen,
+    ///")"
     RParen,
+    ///"{"
     LBrace,
+    ///"}"
     RBrace,
+    ///"["
     LSquare,
+    ///"]"
     RSquare,
-    Comma,
+    ///":"
     Colon,
+    ///";"
     SemiColon,
+    ///","
+    Comma,
+    ///"."
     Dot,
+    ///"?"
+    Question,
+    ///"@"
+    At,
+    ///"#"
+    Pound,
+    ///"$"
+    Dollar,
 
-    // Operators
+    ///"+"
     Plus,
+    ///"-"
     Minus,
+    ///"*"
     Star,
+    ///"/"
     Slash,
+    ///"="
     Equal,
 
-    // multi tokens
+    ///"+="
     PlusEqual,
+    ///"-="
     MinusEqual,
+    ///"*="
     StarEqual,
+    ///"/="
     SlashEqual,
+    ///"!="
     BangEqual,
+    ///"=="
     EqualEqual,
-    LessThan,
-    GreaterThan,
+    ///"<"
+    Less,
+    ///">"
+    Greater,
+    ///"<="
     LessEqual,
+    ///">="
     GreaterEqual,
+    ///"::"
     ColonColon,
 
-    // Literals
     Identifier,
-    Number,
+    IntLiteral,
+    FloatLiteral,
     String,
     
-    // Logical operators
+    ///"&&"
     And,
+    ///"||"
     Or,
+    ///"!"
     Bang,
 
-    // Bitwise operator
-    BitAnd,
-    BitOr,
-    XNor,
+    ///"^"
+    Ampersand,
+    ///"|"
+    Bar,
 
-    // Keywords
     If,
     Else,
     While,
@@ -86,7 +118,6 @@ pub enum TokenType {
     In,
     Struct,
     Enum,
-    Trait,
     SelfUpper,
     SelfLower,
     Construct,
@@ -94,19 +125,18 @@ pub enum TokenType {
     Await,
     Async,
 
-    // Type keywords
-    Literal(LiteralTypes),
-
-    // Access modifiers
+    // Access modifier
     Public,
-    Private,
 
-    // Data structures
-    Array,
-    Tuple,
-   
-    //End of file
-    EOF
+    // End of File
+    EoF,
+}
+
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct Position {
+    pub line: usize,
+    pub col: usize,
 }
 
 
@@ -114,24 +144,24 @@ pub enum TokenType {
 pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,
-    pub literal: Option<String>,
-    pub line: usize,
+    pub literal: Option<Literal>,
+    pub pos: Position,
 }
 
 impl Token {
-    pub fn new(token_type: TokenType, lexeme: String, literal: Option<String>, line: usize,) -> Self {
+    pub fn new(token_type: TokenType, lexeme: String, literal: Option<Literal>, pos: Position) -> Self {
         Token {
             token_type,
             lexeme,
             literal,
-            line,
+            pos,
         }
     }
 
     pub fn to_string(&self) -> String {
         format!(
-            "Token {{ type: {:?}, lexeme: {}, literal: {:?}, line: {} }}",
-            self.token_type, self.lexeme, self.literal, self.line,
+            "Token {{ type: {:?}, lexeme: {}, literal: {:?}, position: {:?} }}",
+            self.token_type, self.lexeme, self.literal, self.pos
         )
     }
 }
