@@ -30,7 +30,13 @@ fn help_args(args: Vec<String>, state: &mut MiniState) {
                 exit(0);
             }
             _ => {
-                if let Err(err) = run_file(state, &args[1]) {
+                let filename = &args[1];
+                if !filename.ends_with(".mini") {
+                    eprintln!("Error: file must end with `.mini`");
+                    exit(65);
+                }
+
+                if let Err(err) = run_file(state, filename) {
                     eprintln!("Error: {}", err);
                     exit(74);
                 }
