@@ -8,10 +8,11 @@ use crate::scanner::token::{ Literal, Position, Token, TokenType };
 #[derive(Debug, PartialEq)]
 pub struct Scanner<'a> {
     source: &'a str,
-    pub tokens: Vec<Token>,
+    tokens: Vec<Token>,
     start: usize,
     current: usize,
     pos: Position,
+    start_pos: Position,
     state: &'a mut MiniState,
 }
 
@@ -22,22 +23,21 @@ impl<'a> Scanner<'a> {
             tokens: Vec::new(),
             start: 0,
             current: 0,
-            pos: Position {
-                line: 1,
-                col: 1,
-            },
+            pos: Position { line: 1, col: 1 },
+            start_pos: Position { line: 1, col: 1 },
             state,
         }
     }
 
-    pub fn scan_tokens(&mut self) -> (&Vec<Token>, bool) {
+    pub fn scan_tokens(&mut self) -> (Vec<Token>, bool) {
         while !self.is_at_end() {
             self.start = self.current;
+            self.start_pos = self.pos.clone();
             self.scan_token();
         }
 
-        self.tokens.push(Token::new(TokenType::EoF, "".to_string(), None, self.pos));
-        (&self.tokens, self.state.had_error)
+        self.tokens.push(Token::new(TokenType::EoF, "".to_string(), None, self.pos.clone()));
+        (std::mem::take(&mut self.tokens), self.state.had_error)
     }
 
     fn scan_token(&mut self) {
@@ -89,7 +89,9 @@ impl<'a> Scanner<'a> {
             '/' => {
                 if self.match_token('=') {
                     self.add_token(TokenType::SlashEqual);
-                } else {
+                } else if self.match_token('/') {
+                    self.single_line_comment();
+                }else {
                     self.add_token(TokenType::Slash);
                 }
             }
@@ -135,8 +137,7 @@ impl<'a> Scanner<'a> {
                     self.add_token(TokenType::Bar);
                 }
             }
-            ' ' | '\r' | '\t' => {}
-            '\n' => self.pos.line += 1,
+            ' ' | '\r' | '\t' | '\n'  => {}
             _ => {
                 if self.is_digit(c) {
                     self.number();
@@ -181,12 +182,14 @@ impl<'a> Scanner<'a> {
     fn advance(&mut self)-> char {
         let c = self.peek();
         self.current += c.len_utf8();
+
         if c == '\n' {
             self.pos.line += 1;
             self.pos.col = 1;
         } else {
             self.pos.col += 1;
         }
+        
         c
     }
 
@@ -231,11 +234,7 @@ impl<'a> Scanner<'a> {
 
     fn string(&mut self) {
         while self.peek() != '"' && !self.is_at_end() {
-            if self.peek() == '\n' {
-                self.pos.line += 1;
-            }
-            
-            self.advance();
+           self.advance();
         }
 
         if self.is_at_end() {
@@ -323,6 +322,7 @@ impl<'a> Scanner<'a> {
 
     fn add_token_(&mut self, token_type: TokenType, literal: Option<Literal>) {
         let lexeme  = &self.source[self.start..self.current];
-        self.tokens.push(Token::new(token_type, lexeme.to_string(), literal, self.pos));
+        let pos = self.start_pos.clone();
+        self.tokens.push(Token::new(token_type, lexeme.to_string(), literal, self.start_pos));
     }
 }
