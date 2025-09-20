@@ -1,4 +1,5 @@
 mod scanner;
+mod parser;
 
 use std::process::exit;
 use std::env;
