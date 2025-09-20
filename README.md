@@ -1,5 +1,8 @@
 # mini-lang
-A modern, systems programming language focused on clarity and efficiency. Also to clarify the name mini does not mean it aims to be a toy language.
+A modern, systems programming language focused on clarity and efficiency
+
+## Side note: 
+To clarify the name "mini" does not mean it aims to be a toy language
 
 ## Installation
 
@@ -43,22 +46,9 @@ func mini() {
 To execute a mini source file:
 
 ``` bash
-./target/release mini run hello_world.mini
+.\target\release\mini hello.mini
 ```
 
-### Interactive Prompt (REPL)
-To enter the interactive prompt, where you can type mini code line by line:
-```bash
-./target/release mini
-```
-
-```bash
-> print "Hello from REPL!";
-// (Output will be tokens for now)
-> 1 + 2;
-// (Output will be tokens for now)
-> exit
-```
 
 ### Help and Version
 To see the usage instructions and available flags:
@@ -70,6 +60,8 @@ mini -h
 
 To display the current version of Mini:
 ```bash
+mini --version
+# or
 mini -v
 ```
 
