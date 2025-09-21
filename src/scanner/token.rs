@@ -3,7 +3,6 @@
 #[derive(Debug, PartialEq, Clone)]
 pub enum Literal {
     Int(isize),
-    UInt(usize),
     Float(f64),
     String(String),
     Bool(bool),
