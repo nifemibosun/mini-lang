@@ -10,7 +10,7 @@ use scanner::{ Scanner, token::Position };
 
 
 fn help_msg() {
-    println!("Usage: mini <option> | <filename.mini>\n");
+    println!("Usage: mini <file.mini>\n");
     println!("Options:");
     println!("  -h, --help         Shows this help message");
     println!("  -v, --version      Shows version information");

@@ -2,7 +2,6 @@
 
 use crate::scanner::token::TokenType;
 
-
 pub enum LiteralTypes {
     Int8(i8),
     Int16(i16),
@@ -24,8 +23,10 @@ pub enum LiteralTypes {
 pub enum TypeExpr {
     Named(String),
     Array(Box<TypeExpr>),
-    Pointer(Box<TypeExpr>),
-    Reference(Box<TypeExpr>),
+    Pointer {
+        mutable: bool,
+        target: Box<TypeExpr>,
+    },
     Generic(String, Vec<TypeExpr>)
 }
 
