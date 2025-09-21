@@ -1,0 +1,73 @@
+Program     ::= Decl* EOF
+Decl        ::= ImportDecl
+              | ConstDecl
+              | FuncDecl
+              | StructDecl
+              | EnumDecl
+              | ConstructDecl
+ImportDecl      ::= "import" Identifier ("." Identifier)* ";"
+
+ConstDecl       ::= "const" Identifier ":" Type "=" Expr ";"
+
+FuncDecl        ::= "func" Identifier "(" ParamList? ")" 
+                     (":" Type)? Block
+
+ParamList       ::= Param ("," Param)*
+Param           ::= Identifier ":" Type
+
+StructDecl      ::= "struct" Identifier "{" FieldList? "}"
+FieldList       ::= Field ("," Field)*
+Field           ::= Identifier ":" Type
+
+EnumDecl        ::= "enum" Identifier "{" VariantList? "}"
+VariantList     ::= Identifier ("," Identifier)*
+
+ConstructDecl   ::= "construct" Identifier "{" FuncDecl* "}"
+Stmt        ::= ExprStmt
+              | LetStmt
+              | ConstDecl         // constants can appear inside blocks too
+              | ReturnStmt
+              | Block
+              | IfStmt
+              | WhileStmt
+              | ForStmt
+
+ExprStmt    ::= Expr ";"
+
+LetStmt     ::= "let" ("mut")? Identifier (":" Type)? ("=" Expr)? ";"
+
+ReturnStmt  ::= "return" Expr? ";"
+
+Block       ::= "{" Stmt* "}"
+
+IfStmt      ::= "if" Expr Block ("else" (Block | IfStmt))?
+
+WhileStmt   ::= "while" Expr Block
+
+ForStmt     ::= "for" Identifier "in" Expr Block
+
+Expr        ::= Assignment
+Assignment  ::= OrExpr (("=" OrExpr))?
+
+OrExpr      ::= AndExpr ( "||" AndExpr )*
+AndExpr     ::= Equality ( "&&" Equality )*
+Equality    ::= Comparison ( ( "==" | "!=" ) Comparison )*
+Comparison  ::= Term ( ( "<" | ">" | "<=" | ">=" ) Term )*
+Term        ::= Factor ( ( "+" | "-" ) Factor )*
+Factor      ::= Unary ( ( "*" | "/" ) Unary )*
+Unary       ::= ( "!" | "-" | "*" | "&" ) Unary | Call
+Call        ::= Primary ( "(" ArgList? ")" | "." Identifier | "[" Expr "]" )*
+ArgList     ::= Expr ("," Expr)*
+
+Primary     ::= Literal
+              | Identifier
+              | "(" Expr ")"
+
+			  Literal     ::= IntLiteral
+              | FloatLiteral
+              | StringLiteral
+              | "true"
+              | "false"
+              | "char"
+
+Type        ::= Identifier
