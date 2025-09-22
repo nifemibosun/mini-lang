@@ -1,13 +1,12 @@
-mod scanner;
 mod parser;
+mod scanner;
 
-use std::process::exit;
 use std::env;
-use std::io::Result;
 use std::fs;
+use std::io::Result;
+use std::process::exit;
 
-use scanner::{ Scanner, token::Position };
-
+use scanner::{token::Position, Scanner};
 
 fn help_msg() {
     println!("Usage: mini <file.mini>\n");
@@ -20,7 +19,7 @@ fn help_args(args: Vec<String>, state: &mut MiniState) {
     if args.len() > 2 {
         help_msg();
         exit(64);
-    } else if  args.len() == 2 {
+    } else if args.len() == 2 {
         match args[1].as_str() {
             "--help" | "-h" => {
                 help_msg();
@@ -58,17 +57,16 @@ impl MiniState {
     pub fn new() -> Self {
         MiniState { had_error: false }
     }
-    
+
     pub fn error(&mut self, pos: Position, message: &str) {
         self.report(pos, message);
     }
-    
+
     fn report(&mut self, pos: Position, message: &str) {
         eprintln!("Error at {}:{}: {}", pos.line, pos.col, message);
         self.had_error = true;
     }
 }
-
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -85,14 +83,13 @@ fn main() {
 fn run_file(state: &mut MiniState, path: &str) -> Result<()> {
     let content = fs::read_to_string(path)?;
     run(state, &content);
-    
+
     if state.had_error {
         exit(65);
     }
-    
+
     Ok(())
 }
-
 
 fn run(state: &mut MiniState, source: &str) {
     let mut scanner = Scanner::new(source, state);

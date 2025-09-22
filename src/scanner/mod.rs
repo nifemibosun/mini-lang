@@ -2,8 +2,7 @@
 pub mod token;
 
 use super::MiniState;
-use crate::scanner::token::{ Literal, Position, Token, TokenType };
-
+use crate::scanner::token::{Literal, Position, Token, TokenType};
 
 #[derive(Debug, PartialEq)]
 pub struct Scanner<'a> {
@@ -36,7 +35,12 @@ impl<'a> Scanner<'a> {
             self.scan_token();
         }
 
-        self.tokens.push(Token::new(TokenType::EoF, "".to_string(), None, self.pos.clone()));
+        self.tokens.push(Token::new(
+            TokenType::EoF,
+            "".to_string(),
+            None,
+            self.pos.clone(),
+        ));
         (std::mem::take(&mut self.tokens), self.state.had_error)
     }
 
@@ -91,7 +95,7 @@ impl<'a> Scanner<'a> {
                     self.add_token(TokenType::SlashEqual);
                 } else if self.match_token('/') {
                     self.single_line_comment();
-                }else {
+                } else {
                     self.add_token(TokenType::Slash);
                 }
             }
@@ -137,11 +141,11 @@ impl<'a> Scanner<'a> {
                     self.add_token(TokenType::Bar);
                 }
             }
-            ' ' | '\r' | '\t' | '\n'  => {}
+            ' ' | '\r' | '\t' | '\n' => {}
             _ => {
                 if self.is_digit(c) {
                     self.number();
-                } else if self.is_alpha(c)  {
+                } else if self.is_alpha(c) {
                     self.identifier();
                 } else {
                     self.state.error(self.pos, "Unexpected character");
@@ -150,7 +154,7 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    fn match_token(&mut self, expected: char)-> bool {
+    fn match_token(&mut self, expected: char) -> bool {
         if self.is_at_end() {
             return false;
         }
@@ -163,7 +167,7 @@ impl<'a> Scanner<'a> {
         true
     }
 
-    fn peek(&self)-> char {
+    fn peek(&self) -> char {
         if self.is_at_end() {
             return '\0';
         }
@@ -171,7 +175,7 @@ impl<'a> Scanner<'a> {
         self.source[self.current..].chars().next().unwrap()
     }
 
-    fn peek_next(&self)-> char {
+    fn peek_next(&self) -> char {
         if self.current + 1 >= self.source.len() {
             return '\0';
         }
@@ -179,7 +183,7 @@ impl<'a> Scanner<'a> {
         self.source[self.current..].chars().nth(1).unwrap_or('\0')
     }
 
-    fn advance(&mut self)-> char {
+    fn advance(&mut self) -> char {
         let c = self.peek();
         self.current += c.len_utf8();
 
@@ -189,7 +193,7 @@ impl<'a> Scanner<'a> {
         } else {
             self.pos.col += 1;
         }
-        
+
         c
     }
 
@@ -215,7 +219,7 @@ impl<'a> Scanner<'a> {
     }
 
     #[inline]
-    fn is_alpha_num(&self, c: char)-> bool {
+    fn is_alpha_num(&self, c: char) -> bool {
         self.is_alpha(c) || self.is_digit(c)
     }
 
@@ -228,13 +232,13 @@ impl<'a> Scanner<'a> {
 
         match self.keywords(text) {
             Some(token_type) => self.add_token(token_type.clone()),
-            None => self.add_token(TokenType::Identifier)
+            None => self.add_token(TokenType::Identifier),
         }
     }
 
     fn string(&mut self) {
         while self.peek() != '"' && !self.is_at_end() {
-           self.advance();
+            self.advance();
         }
 
         if self.is_at_end() {
@@ -269,18 +273,12 @@ impl<'a> Scanner<'a> {
 
         if is_float {
             match num_str.parse::<f64>() {
-                Ok(value) => self.add_token_(
-                    TokenType::FloatLiteral,
-                    Some(Literal::Float(value))
-                ),
+                Ok(value) => self.add_token_(TokenType::FloatLiteral, Some(Literal::Float(value))),
                 Err(_) => self.state.error(self.pos, "Invalid float literal"),
             }
         } else {
             match num_str.parse::<isize>() {
-                Ok(value) => self.add_token_(
-                    TokenType::IntLiteral,
-                    Some(Literal::Int(value))
-                ),
+                Ok(value) => self.add_token_(TokenType::IntLiteral, Some(Literal::Int(value))),
                 Err(_) => self.state.error(self.pos, "Invalid integer literal"),
             }
         }
@@ -311,7 +309,7 @@ impl<'a> Scanner<'a> {
             "await" => Some(TokenType::Await),
             "async" => Some(TokenType::Async),
             "public" => Some(TokenType::Public),
-            _ => None
+            _ => None,
         }
     }
 
@@ -321,8 +319,147 @@ impl<'a> Scanner<'a> {
     }
 
     fn add_token_(&mut self, token_type: TokenType, literal: Option<Literal>) {
-        let lexeme  = &self.source[self.start..self.current];
+        let lexeme = &self.source[self.start..self.current];
         let pos = self.start_pos.clone();
-        self.tokens.push(Token::new(token_type, lexeme.to_string(), literal, self.start_pos));
+        self.tokens.push(Token::new(
+            token_type,
+            lexeme.to_string(),
+            literal,
+            self.start_pos,
+        ));
+    }
+}
+
+/// Tests for scanner
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::scanner::*;
+
+    fn scan_types(source: &str) -> Vec<TokenType> {
+        let mut state = MiniState::new();
+        let mut scanner = Scanner::new(source, &mut state);
+        let (tokens, _) = scanner.scan_tokens();
+        tokens.into_iter().map(|t| t.token_type).collect()
+    }
+
+    #[test]
+    fn test_single_symbols() {
+        let source = "(){},.;";
+        let types = scan_types(source);
+        assert_eq!(
+            types,
+            vec![
+                TokenType::LParen,
+                TokenType::RParen,
+                TokenType::LBrace,
+                TokenType::RBrace,
+                TokenType::Comma,
+                TokenType::Dot,
+                TokenType::SemiColon,
+                TokenType::EoF
+            ]
+        );
+    }
+
+    #[test]
+    fn test_keywords_and_identifiers() {
+        let source = "if else while func return let mini";
+        let types = scan_types(source);
+        assert_eq!(
+            types,
+            vec![
+                TokenType::If,
+                TokenType::Else,
+                TokenType::While,
+                TokenType::Func,
+                TokenType::Return,
+                TokenType::Let,
+                TokenType::Identifier,
+                TokenType::EoF
+            ]
+        );
+    }
+
+    #[test]
+    fn test_numbers() {
+        let source = "42 3.14";
+        let mut state = MiniState::new();
+        let mut scanner = Scanner::new(source, &mut state);
+        let (tokens, _) = scanner.scan_tokens();
+        assert_eq!(tokens[0].token_type, TokenType::IntLiteral);
+        assert_eq!(tokens[1].token_type, TokenType::FloatLiteral);
+    }
+
+    #[test]
+    fn test_string_literal() {
+        let source = "\"hello world\"";
+        let mut state = MiniState::new();
+        let mut scanner = Scanner::new(source, &mut state);
+        let (tokens, _) = scanner.scan_tokens();
+        assert_eq!(tokens[0].token_type, TokenType::String);
+        if let Some(Literal::String(ref s)) = tokens[0].literal {
+            assert_eq!(s, "hello world");
+        } else {
+            panic!("Expected string literal");
+        }
+    }
+
+    #[test]
+    fn test_comment_and_whitespace() {
+        let source = "let // this is a comment\n x";
+        let types = scan_types(source);
+        assert_eq!(
+            types,
+            vec![TokenType::Let, TokenType::Identifier, TokenType::EoF]
+        );
+    }
+
+    #[test]
+    fn test_unterminated_string() {
+        let source = "\"unterminated";
+        let mut state = MiniState::new();
+        let mut scanner = Scanner::new(source, &mut state);
+        let (_, had_error) = scanner.scan_tokens();
+        assert!(
+            had_error,
+            "Scanner should set had_error for unterminated string"
+        );
+    }
+
+    #[test]
+    fn test_composite_operators() {
+        let source = "+ += - -= * *= / /= == != < <= > >=";
+        let types = scan_types(source);
+        assert_eq!(
+            types,
+            vec![
+                TokenType::Plus,
+                TokenType::PlusEqual,
+                TokenType::Minus,
+                TokenType::MinusEqual,
+                TokenType::Star,
+                TokenType::StarEqual,
+                TokenType::Slash,
+                TokenType::SlashEqual,
+                TokenType::EqualEqual,
+                TokenType::BangEqual,
+                TokenType::Less,
+                TokenType::LessEqual,
+                TokenType::Greater,
+                TokenType::GreaterEqual,
+                TokenType::EoF
+            ]
+        );
+    }
+
+    #[test]
+    fn test_boolean_literals() {
+        let source = "true false";
+        let types = scan_types(source);
+        assert_eq!(
+            types,
+            vec![TokenType::True, TokenType::False, TokenType::EoF]
+        );
     }
 }

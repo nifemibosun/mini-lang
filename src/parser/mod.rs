@@ -2,11 +2,11 @@
 
 pub mod ast;
 
-use crate::scanner::token::{ TokenType, Token };
+use crate::scanner::token::{Token, TokenType};
 
 pub struct Parser {
     tokens: Vec<Token>,
-    current: isize
+    current: isize,
 }
 
 impl Parser {

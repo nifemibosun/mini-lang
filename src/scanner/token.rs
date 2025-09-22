@@ -9,7 +9,6 @@ pub enum Literal {
     Char(char),
 }
 
-
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
     /// "("
@@ -79,7 +78,7 @@ pub enum TokenType {
     IntLiteral,
     FloatLiteral,
     String,
-    
+
     ///"&&"
     And,
     ///"||"
@@ -122,13 +121,11 @@ pub enum TokenType {
     EoF,
 }
 
-
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Position {
     pub line: usize,
     pub col: usize,
 }
-
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Token {
@@ -139,7 +136,12 @@ pub struct Token {
 }
 
 impl Token {
-    pub fn new(token_type: TokenType, lexeme: String, literal: Option<Literal>, pos: Position) -> Self {
+    pub fn new(
+        token_type: TokenType,
+        lexeme: String,
+        literal: Option<Literal>,
+        pos: Position,
+    ) -> Self {
         Token {
             token_type,
             lexeme,

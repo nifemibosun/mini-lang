@@ -1,7 +1,8 @@
 #![allow(unused)]
 
-use crate::scanner::token::{ Position, TokenType };
+use crate::scanner::token::{Position, TokenType};
 
+#[derive(Debug, PartialEq, Clone)]
 pub enum LiteralTypes {
     Int8(i8),
     Int16(i16),
@@ -22,18 +23,21 @@ pub enum LiteralTypes {
 
 pub type Program = Vec<Node<Decl>>;
 
+#[derive(Debug, PartialEq, Clone)]
 pub struct Node<T> {
     pub value: T,
     pub pos: Position,
 }
 
+#[derive(Debug, PartialEq, Clone)]
 pub struct FuncDecl {
     name: String,
     params: Vec<(String, TypeExpr)>,
     return_type: Option<TypeExpr>,
     body: Vec<Stmt>,
 }
-     
+
+#[derive(Debug, PartialEq, Clone)]
 pub enum TypeExpr {
     Named(String),
     Array(Box<TypeExpr>),
@@ -41,12 +45,13 @@ pub enum TypeExpr {
         mutable: bool,
         target: Box<TypeExpr>,
     },
-    Generic(String, Vec<TypeExpr>)
+    Generic(String, Vec<TypeExpr>),
 }
 
 /// Expressions always return a value
 pub type Expr = Node<ExprKind>;
 
+#[derive(Debug, PartialEq, Clone)]
 pub enum ExprKind {
     Literal(LiteralTypes),
     Identifier(String),
@@ -74,11 +79,10 @@ pub enum ExprKind {
     },
 }
 
-
-
 /// Statements perform actions, but do not themselves produce a value
 pub type Stmt = Node<StmtKind>;
 
+#[derive(Debug, PartialEq, Clone)]
 pub enum StmtKind {
     ExprStmt(Expr),
     Let {
@@ -106,8 +110,11 @@ pub enum StmtKind {
 }
 
 /// Declarations introduce new named entities into a scope
+#[derive(Debug, PartialEq, Clone)]
 pub enum Decl {
-    Import { module: String },
+    Import {
+        module: String,
+    },
     Const {
         name: String,
         r#type: TypeExpr,
