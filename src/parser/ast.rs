@@ -1,6 +1,6 @@
 #![allow(unused)]
 
-use crate::scanner::token::TokenType;
+use crate::scanner::token::{ Position, TokenType };
 
 pub enum LiteralTypes {
     Int8(i8),
@@ -20,6 +20,20 @@ pub enum LiteralTypes {
     Char(char),
 }
 
+pub type Program = Vec<Node<Decl>>;
+
+pub struct Node<T> {
+    pub value: T,
+    pub pos: Position,
+}
+
+pub struct FuncDecl {
+    name: String,
+    params: Vec<(String, TypeExpr)>,
+    return_type: Option<TypeExpr>,
+    body: Vec<Stmt>,
+}
+     
 pub enum TypeExpr {
     Named(String),
     Array(Box<TypeExpr>),
@@ -30,14 +44,10 @@ pub enum TypeExpr {
     Generic(String, Vec<TypeExpr>)
 }
 
-pub enum AstNode {
-    Expr(Expr),
-    Stmt(Stmt),
-    Decl(Decl),
-}
-
 /// Expressions always return a value
-pub enum Expr {
+pub type Expr = Node<ExprKind>;
+
+pub enum ExprKind {
     Literal(LiteralTypes),
     Identifier(String),
     Unary {
@@ -64,8 +74,12 @@ pub enum Expr {
     },
 }
 
+
+
 /// Statements perform actions, but do not themselves produce a value
-pub enum Stmt {
+pub type Stmt = Node<StmtKind>;
+
+pub enum StmtKind {
     ExprStmt(Expr),
     Let {
         name: String,
@@ -99,22 +113,17 @@ pub enum Decl {
         r#type: TypeExpr,
         value: Expr,
     },
-    Func {
-        name: String,
-        params: Vec<(String, TypeExpr)>,
-        return_type: Option<TypeExpr>,
-        body: Vec<Stmt>,
-    },
+    Func(FuncDecl),
     Struct {
         name: String,
         fields: Vec<(String, TypeExpr)>,
     },
     Enum {
         name: String,
-        variants: Vec<String>,
+        variants: Vec<(String, Option<TypeExpr>)>,
     },
     Construct {
         name: String,
-        methods: Vec<Decl>,
+        methods: Vec<FuncDecl>,
     },
 }
