@@ -1,0 +1,55 @@
+// imports only take file and then exposes all the public functions or methods
+import std::io;
+import std::memory;
+
+
+// constant are declarations, but they can also exist inside function
+// and types must be explicitly stated
+const PI: float32 = 3.14159;
+
+// functions with return types that is not a unit () must specify there return type
+func test_const() {
+    const E: float32 = 2.718;
+}
+
+// public is the only access modifier that will exist in mini(all thing are private by default)
+public struct User {
+    name: *const string,
+    age: *mut uint32,
+    email: *mut string
+}
+
+// method for structs can be defined using the construct keyword
+// to use a struct method(e.g. User::new_user(args))
+construct User {
+    // a function with return type
+    func new_user(name: *const string, age: *mut uint32, email: *mut string): Self {
+        return User {
+            name,
+            age,
+            email
+        }
+    }
+
+    // if the return type of a function is a unit () you can explicitly say so
+    func change_email(*mut self, email: *mut string): void {
+        self.email = email;
+    }
+}
+
+// All executable must be inside the main function
+func main() {
+    let mut buffer1 = alloc(1024);
+
+    // use an allocator you prefer/want
+    let mut buffer2 = alloc_with(myAllocator, 1024);
+
+    // ... use buffer2 here ...
+    println(buffer1);
+
+    // ... use buffer2 here ...
+    println(buffer2);
+
+    free(buffer1);
+    free_with(myAllocator, buffer2);
+}

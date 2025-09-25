@@ -22,8 +22,8 @@ impl<'a> Scanner<'a> {
             tokens: Vec::new(),
             start: 0,
             current: 0,
-            pos: Position { line: 1, col: 1 },
-            start_pos: Position { line: 1, col: 1 },
+            pos: Position::new(),
+            start_pos: Position::new(),
             state,
         }
     }

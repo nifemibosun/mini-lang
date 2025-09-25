@@ -127,6 +127,12 @@ pub struct Position {
     pub col: usize,
 }
 
+impl Position {
+    pub fn new() -> Self {
+        Position { line: 1, col: 1 }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct Token {
     pub token_type: TokenType,
