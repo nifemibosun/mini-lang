@@ -7,6 +7,7 @@ use std::io::Result;
 use std::process::exit;
 
 use scanner::{token::Position, Scanner};
+use parser::Parser;
 
 fn help_msg() {
     println!("Usage: mini <file.mini>\n");
@@ -94,8 +95,7 @@ fn run_file(state: &mut MiniState, path: &str) -> Result<()> {
 fn run(state: &mut MiniState, source: &str) {
     let mut scanner = Scanner::new(source, state);
     let (tokens, _) = scanner.scan_tokens();
+    let mut parser = Parser::new(tokens);
 
-    for token in tokens {
-        println!("{:?}", token);
-    }
+    println!("{:#?}", parser.declaration().unwrap())
 }

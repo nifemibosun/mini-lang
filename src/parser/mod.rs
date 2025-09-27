@@ -13,7 +13,7 @@ pub struct Parser {
 }
 
 impl Parser {
-    fn new(tokens: Vec<Token>) -> Self {
+    pub fn new(tokens: Vec<Token>) -> Self {
         Parser { tokens, current: 0 }
     }
 
@@ -36,38 +36,42 @@ impl Parser {
         unimplemented!();
     }
 
-    fn declaration(&mut self) -> Result<Node<Decl>, String> {
+    pub fn declaration(&mut self) -> Result<Node<Decl>, String> {
         if self.match_token(&[TokenType::Import]) {
-            self.import_decl();
+            return self.import_decl();
         } else if self.match_token(&[TokenType::Const]) {
-            self.const_decl();
+            return self.const_decl();
         } else if self.match_token(&[TokenType::Func]) {
-            self.function_decl();
+            return self.function_decl();
         } else if self.match_token(&[TokenType::Struct]) {
-            self.struct_decl();
+            return self.struct_decl();
         } else if self.match_token(&[TokenType::Enum]) {
-            self.enum_decl();
+            return self.enum_decl();
         } else if self.match_token(&[TokenType::Construct]) {
-            self.construct_decl();
-        } else {
+            return self.construct_decl();
         }
 
-        unimplemented!();
+        Err(format!(
+            "Unexpected token {:?} at {:?}",
+            self.peek().token_type,
+            self.peek().pos
+        ))
     }
 
     fn import_decl(&mut self) -> Result<Node<Decl>, String> {
         let s_pos = self.previous().pos;
         let mut path = Vec::new();
 
-        while !self.match_token(&[TokenType::SemiColon]) {
-            let t_name =
-                self.consume(TokenType::Identifier, "Expected identifier after 'import'")?;
+        loop {
+            let t_name = self.consume(TokenType::Identifier, "Expected identifier after 'import'")?;
+            path.push(t_name.lexeme);
 
-            if self.match_token(&[TokenType::SemiColon]) {
-                path.push(t_name.lexeme);
-            } else {
-                path.push(t_name.lexeme);
-                self.consume(TokenType::ColonColon, "Expected '::' after import name");
+            if self.match_token(&[TokenType::ColonColon]) {
+                continue;
+            }
+
+            if self.check(TokenType::SemiColon) {
+                break;
             }
         }
 
@@ -143,6 +147,7 @@ impl Parser {
         self.current >= self.tokens.len()
     }
 
+    /// Check if a token has a specific type that is needed
     fn check(&mut self, t_type: TokenType) -> bool {
         if self.is_at_end() {
             return false;
