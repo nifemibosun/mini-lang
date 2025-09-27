@@ -63,7 +63,8 @@ impl Parser {
         let mut path = Vec::new();
 
         loop {
-            let t_name = self.consume(TokenType::Identifier, "Expected identifier after 'import'")?;
+            let t_name =
+                self.consume(TokenType::Identifier, "Expected identifier after 'import'")?;
             path.push(t_name.lexeme);
 
             if self.match_token(&[TokenType::ColonColon]) {

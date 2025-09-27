@@ -6,8 +6,8 @@ use std::fs;
 use std::io::Result;
 use std::process::exit;
 
-use scanner::{token::Position, Scanner};
 use parser::Parser;
+use scanner::{token::Position, Scanner};
 
 fn help_msg() {
     println!("Usage: mini <file.mini>\n");
