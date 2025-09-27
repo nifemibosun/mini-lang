@@ -30,17 +30,13 @@ pub struct Node<T> {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct FuncDecl {
-    name: String,
-    params: Vec<(String, TypeExpr)>,
-    return_type: Option<TypeExpr>,
-    body: Vec<Stmt>,
-}
-
-#[derive(Debug, PartialEq, Clone)]
 pub enum TypeExpr {
     Named(String),
-    Array(Box<TypeExpr>),
+    Array {
+        mutable: bool,
+        size: Option<usize>,
+        element: Box<TypeExpr>,
+    },
     Pointer {
         mutable: bool,
         target: Box<TypeExpr>,
@@ -111,9 +107,17 @@ pub enum StmtKind {
 
 /// Declarations introduce new named entities into a scope
 #[derive(Debug, PartialEq, Clone)]
+pub struct FuncDecl {
+    name: String,
+    params: Vec<(String, TypeExpr)>,
+    return_type: Option<TypeExpr>,
+    body: Vec<Stmt>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub enum Decl {
     Import {
-        module: String,
+        module: Vec<String>,
     },
     Const {
         name: String,
