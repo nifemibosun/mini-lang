@@ -30,6 +30,13 @@ pub struct Node<T> {
 }
 
 #[derive(Debug, PartialEq, Clone)]
+pub enum PointerKind {
+    Default,
+    Const,
+    Mut,
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub enum TypeExpr {
     Named(String),
     Array {
@@ -38,7 +45,7 @@ pub enum TypeExpr {
         element: Box<TypeExpr>,
     },
     Pointer {
-        mutable: bool,
+        mutable: PointerKind,
         target: Box<TypeExpr>,
     },
     Generic(String, Vec<TypeExpr>),
@@ -108,10 +115,10 @@ pub enum StmtKind {
 /// Declarations introduce new named entities into a scope
 #[derive(Debug, PartialEq, Clone)]
 pub struct FuncDecl {
-    name: String,
-    params: Vec<(String, TypeExpr)>,
-    return_type: Option<TypeExpr>,
-    body: Vec<Stmt>,
+    pub name: String,
+    pub params: Vec<(String, TypeExpr)>,
+    pub return_type: Option<TypeExpr>,
+    pub body: Vec<Stmt>,
 }
 
 #[derive(Debug, PartialEq, Clone)]

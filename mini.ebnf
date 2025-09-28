@@ -5,7 +5,7 @@ Decl        ::= ImportDecl
               | StructDecl
               | EnumDecl
               | ConstructDecl
-ImportDecl      ::= "import" Identifier ("." Identifier)* ";"
+ImportDecl      ::= "import" Identifier ("::" Identifier)* ";"
 
 ConstDecl       ::= "const" Identifier ":" Type "=" Expr ";"
 

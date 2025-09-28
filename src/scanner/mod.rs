@@ -250,7 +250,7 @@ impl<'a> Scanner<'a> {
 
         let value = &self.source[self.start + 1..self.current - 1];
 
-        self.add_token_(TokenType::String, Some(Literal::String(value.to_string())));
+        self.add_token_(TokenType::StringLiteral, Some(Literal::String(value.to_string())));
     }
 
     fn number(&mut self) {
@@ -397,7 +397,7 @@ mod tests {
         let mut state = MiniState::new();
         let mut scanner = Scanner::new(source, &mut state);
         let (tokens, _) = scanner.scan_tokens();
-        assert_eq!(tokens[0].token_type, TokenType::String);
+        assert_eq!(tokens[0].token_type, TokenType::StringLiteral);
         if let Some(Literal::String(ref s)) = tokens[0].literal {
             assert_eq!(s, "hello world");
         } else {

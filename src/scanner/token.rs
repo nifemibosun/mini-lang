@@ -77,7 +77,7 @@ pub enum TokenType {
     Identifier,
     IntLiteral,
     FloatLiteral,
-    String,
+    StringLiteral,
 
     ///"&&"
     And,

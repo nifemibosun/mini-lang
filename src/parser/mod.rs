@@ -2,9 +2,7 @@
 
 pub mod ast;
 
-use std::f64::consts::E;
-
-use crate::parser::ast::{Decl, Expr, Node, Program, Stmt, TypeExpr};
+use crate::parser::ast::{ExprKind, LiteralTypes,PointerKind, Decl, Expr, Node, Program, Stmt, TypeExpr};
 use crate::scanner::token::{Token, TokenType};
 
 pub struct Parser {
@@ -13,11 +11,13 @@ pub struct Parser {
 }
 
 impl Parser {
+    /// Construct a new parser instance
     pub fn new(tokens: Vec<Token>) -> Self {
         Parser { tokens, current: 0 }
     }
 
-    fn parse(&mut self) -> Result<Program, String> {
+    /// The main parse method on every parse instance
+    pub fn parse(&mut self) -> Result<Program, String> {
         let mut program = Vec::new();
 
         while !self.is_at_end() {
@@ -29,7 +29,7 @@ impl Parser {
     }
 
     fn expression(&mut self) -> Result<Expr, String> {
-        unimplemented!();
+        self.parse_precedence(0)
     }
 
     fn statement(&mut self) {
@@ -132,6 +132,105 @@ impl Parser {
         t
     }
 
+    fn parse_precedence(&mut self, min_prec: u8) -> Result<Expr, String> {
+        let mut left = self.parse_primary()?;
+
+        while let Some(op) = self.current_operator() {
+            let prec = self.precedence(&op);
+            if prec < min_prec {
+                break;
+            }
+
+            let operator = self.advance().token_type;
+            let mut right = self.parse_precedence(prec + 1)?;
+
+            left = Node {
+                pos: left.pos.clone(),
+                value: ExprKind::Binary {
+                    left: Box::new(left),
+                    operator,
+                    right: Box::new(right),
+                },
+            };
+        }
+
+        Ok(left)
+    }
+
+    fn parse_primary(&mut self) -> Result<Expr, String> {
+        let token = self.advance();
+
+        let node = match token.token_type {
+            TokenType::IntLiteral => {
+                let value = token.lexeme.parse::<i64>().map_err(|_| {
+                    format!("Invalid integer literal at {:?}", token.pos)
+                })?;
+                Node {
+                    pos: token.pos,
+                    value: ExprKind::Literal(LiteralTypes::Int64(value)),
+                }
+            }
+            TokenType::FloatLiteral => {
+                let value = token.lexeme.parse::<f64>().map_err(|_| {
+                    format!("Invalid float literal at {:?}", token.pos)
+                })?;
+                Node {
+                    pos: token.pos,
+                    value: ExprKind::Literal(LiteralTypes::Float64(value)),
+                }
+            }
+            TokenType::StringLiteral => Node {
+                pos: token.pos,
+                value: ExprKind::Literal(LiteralTypes::String(token.lexeme)),
+            },
+            TokenType::Identifier => Node {
+                pos: token.pos,
+                value: ExprKind::Identifier(token.lexeme),
+            },
+            TokenType::LParen => {
+                let expr = self.expression()?;
+                self.consume(TokenType::RParen, "Expected ')' after expression")?;
+                Node {
+                    pos: token.pos,
+                    value: ExprKind::Grouping(Box::new(expr)),
+                }
+            }
+            _ => return Err(format!("Unexpected token {:?} in expression", token)),
+        };
+
+        Ok(node)
+    }
+
+    fn current_operator(&self) -> Option<TokenType> {
+        match self.peek().token_type {
+            TokenType::Plus
+            | TokenType::Minus
+            | TokenType::Star
+            | TokenType::Slash
+            | TokenType::EqualEqual
+            | TokenType::BangEqual
+            | TokenType::Less
+            | TokenType::LessEqual
+            | TokenType::Greater
+            | TokenType::GreaterEqual => Some(self.peek().token_type.clone()),
+            _ => None,
+        }
+    }
+
+    fn precedence(&self, op: &TokenType) -> u8 {
+        match op {
+            TokenType::Star | TokenType::Slash => 10,
+            TokenType::Plus | TokenType::Minus => 9,
+            TokenType::EqualEqual
+            | TokenType::BangEqual
+            | TokenType::Less
+            | TokenType::LessEqual
+            | TokenType::Greater
+            | TokenType::GreaterEqual => 5,
+            _ => 0,
+        }
+    }
+
     fn consume(&mut self, t_type: TokenType, msg: &str) -> Result<Token, String> {
         if self.check(t_type) {
             Ok(self.advance())
@@ -172,6 +271,58 @@ impl Parser {
     }
 
     fn parse_type(&mut self) -> Result<TypeExpr, String> {
-        unimplemented!();
+        if self.match_token(&[TokenType::Star]) {
+            let mutable = if self.match_token(&[TokenType::Mut]) {
+                PointerKind::Mut
+            } else if self.match_token(&[TokenType::Const]) {
+                PointerKind::Const
+            } else {
+                PointerKind::Default
+            };
+
+            let target = self.parse_type()?;
+            
+            return Ok(TypeExpr::Pointer {
+                mutable,
+                target: Box::new(target),
+            });
+        }
+
+        if self.match_token(&[TokenType::LSquare]) {
+            let size = if self.check(TokenType::IntLiteral) {
+                let size_token = self.advance();
+                Some(size_token.lexeme.parse::<usize>().map_err(|_| {
+                    format!("Invalid array size at {:?}", size_token.pos)
+                })?)
+            } else {
+                None
+            };
+
+            self.consume(TokenType::RSquare, "Expected ']' after array size")?;
+
+            let element = self.parse_type()?;
+            return Ok(TypeExpr::Array {
+                mutable: false,
+                size,
+                element: Box::new(element),
+            });
+        }
+
+        let ident = self.consume(TokenType::Identifier, "Expected type name")?.lexeme;
+
+        if self.match_token(&[TokenType::Less]) {
+            let mut args = Vec::new();
+            loop {
+                args.push(self.parse_type()?);
+                if self.match_token(&[TokenType::Comma]) {
+                    continue;
+                }
+                self.consume(TokenType::Greater, "Expected '>' after generic args")?;
+                break;
+            }
+            return Ok(TypeExpr::Generic(ident, args));
+        }
+
+        Ok(TypeExpr::Named(ident))
     }
 }
