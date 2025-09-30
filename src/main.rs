@@ -97,5 +97,5 @@ fn run(state: &mut MiniState, source: &str) {
     let (tokens, _) = scanner.scan_tokens();
     let mut parser = Parser::new(tokens);
 
-    println!("{:#?}", parser.declaration().unwrap())
+    println!("{:#?}", parser.parse().unwrap());
 }

@@ -2,8 +2,11 @@
 
 pub mod ast;
 
-use crate::parser::ast::{ExprKind, LiteralTypes,PointerKind, Decl, Expr, Node, Program, Stmt, TypeExpr};
-use crate::scanner::token::{Token, TokenType};
+// use crate::parser::ast;
+use crate::{
+    parser::ast::Node,
+    scanner::token::{Token, TokenType},
+};
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -16,8 +19,8 @@ impl Parser {
         Parser { tokens, current: 0 }
     }
 
-    /// The main parse method on every parse instance
-    pub fn parse(&mut self) -> Result<Program, String> {
+    /// The main parse method on every parser instance
+    pub fn parse(&mut self) -> Result<ast::Program, String> {
         let mut program = Vec::new();
 
         while !self.is_at_end() {
@@ -28,25 +31,203 @@ impl Parser {
         Ok(program)
     }
 
-    fn expression(&mut self) -> Result<Expr, String> {
+    fn expression(&mut self) -> Result<ast::Expr, String> {
         self.parse_precedence(0)
     }
 
-    fn statement(&mut self) {
-        unimplemented!();
+    fn statement(&mut self) -> Result<ast::Stmt, String> {
+        if self.match_token(&[TokenType::Let]) {
+            return self.let_stmt();
+        } else if self.match_token(&[TokenType::Return]) {
+            return self.return_stmt();
+        } else if self.match_token(&[TokenType::LBrace]) {
+            return self.block_stmt();
+        } else if self.match_token(&[TokenType::If]) {
+            return self.if_stmt();
+        } else if self.match_token(&[TokenType::While]) {
+            return self.while_stmt();
+        } else if self.match_token(&[TokenType::For]) {
+            return self.for_stmt();
+        } else {
+            return self.expression_stmt();
+        }
     }
 
-    pub fn declaration(&mut self) -> Result<Node<Decl>, String> {
+    fn let_stmt(&mut self) -> Result<ast::Stmt, String> {
+        let s_pos = self.previous().pos;
+        let mutable = self.match_token(&[TokenType::Mut]);
+
+        let t_name = self.consume(TokenType::Identifier, "Expected variable name after 'let'")?;
+        let name = t_name.lexeme;
+
+        let r#type = if self.match_token(&[TokenType::Colon]) {
+            Some(self.parse_type()?)
+        } else {
+            None
+        };
+
+        let initializer = if self.match_token(&[TokenType::Equal]) {
+            Some(self.expression()?)
+        } else {
+            None
+        };
+
+        if r#type.is_none() && initializer.is_none() {
+            return Err(format!(
+                "'let' declaration must have an initializer or an explicit type at {:?}",
+                s_pos
+            ));
+        }
+
+        self.consume(
+            TokenType::SemiColon,
+            "Expected ';' after variable declaration",
+        )?;
+
+        Ok(ast::Node {
+            value: ast::StmtKind::Let {
+                name,
+                mutable,
+                r#type,
+                initializer,
+            },
+            pos: s_pos,
+        })
+    }
+
+    fn return_stmt(&mut self) -> Result<ast::Stmt, String> {
+        let s_pos = self.previous().pos;
+
+        let expr = if self.check(TokenType::SemiColon) {
+            None
+        } else {
+            Some(self.expression()?)
+        };
+
+        self.consume(TokenType::SemiColon, "Expected ';' after return value")?;
+
+        Ok(ast::Node {
+            value: ast::StmtKind::Return(expr),
+            pos: s_pos,
+        })
+    }
+
+    fn block_stmt(&mut self) -> Result<ast::Stmt, String> {
+        let s_pos = self.previous().pos;
+        let mut statements = Vec::new();
+
+        while !self.check(TokenType::RBrace) && !self.is_at_end() {
+            statements.push(self.statement()?);
+        }
+
+        self.consume(TokenType::RBrace, "Expected '}' after block")?;
+
+        Ok(ast::Node {
+            value: ast::StmtKind::Block(statements),
+            pos: s_pos,
+        })
+    }
+
+    fn if_stmt(&mut self) -> Result<ast::Stmt, String> {
+        let s_pos = self.previous().pos;
+
+        self.consume(TokenType::LParen, "Expected '(' after 'if'")?;
+        let condition = self.expression()?;
+        self.consume(TokenType::RParen, "Expected ')' after if condition")?;
+
+        self.consume(TokenType::LBrace, "Expected '{' after if condition")?;
+        let then_branch = self.block_stmt()?;
+
+        let else_branch = if self.match_token(&[TokenType::Else]) {
+            self.consume(TokenType::LBrace, "Expected '{' after 'else'")?;
+            Some(self.block_stmt()?)
+        } else {
+            None
+        };
+
+        Ok(ast::Node {
+            value: ast::StmtKind::If {
+                condition,
+                then_branch: Box::new(then_branch),
+                else_branch: else_branch.map(Box::new),
+            },
+            pos: s_pos,
+        })
+    }
+
+    fn while_stmt(&mut self) -> Result<ast::Stmt, String> {
+        let s_pos = self.previous().pos;
+
+        self.consume(TokenType::LParen, "Expected '(' after 'while'")?;
+        let condition = self.expression()?;
+        self.consume(TokenType::RParen, "Expected ')' after while condition")?;
+
+        self.consume(TokenType::LBrace, "Expected '{' after while condition")?;
+        let body = self.block_stmt()?;
+
+        Ok(ast::Node {
+            value: ast::StmtKind::While {
+                condition,
+                body: Box::new(body),
+            },
+            pos: s_pos,
+        })
+    }
+
+    fn for_stmt(&mut self) -> Result<ast::Stmt, String> {
+        let s_pos = self.previous().pos;
+
+        let iterator_token = self.consume(
+            TokenType::Identifier,
+            "Expected iterator name in 'for' loop",
+        )?;
+        let iterator = iterator_token.lexeme;
+
+        self.consume(TokenType::In, "Expected 'in' keyword in 'for' loop")?;
+
+        let iterable = self.expression()?;
+
+        self.consume(TokenType::LBrace, "Expected '{' before 'for' body")?;
+        let body = self.block_stmt()?;
+
+        Ok(ast::Node {
+            value: ast::StmtKind::For {
+                iterator,
+                iterable,
+                body: Box::new(body),
+            },
+            pos: s_pos,
+        })
+    }
+
+    fn expression_stmt(&mut self) -> Result<ast::Stmt, String> {
+        let expr = self.expression()?;
+        let s_pos = expr.pos.clone();
+
+        self.consume(
+            TokenType::SemiColon,
+            "Expected ';' after expression statement",
+        )?;
+
+        Ok(ast::Node {
+            value: ast::StmtKind::ExprStmt(expr),
+            pos: s_pos,
+        })
+    }
+
+    pub fn declaration(&mut self) -> Result<ast::Node<ast::Decl>, String> {
+        let is_public = self.match_token(&[TokenType::Public]);
+
         if self.match_token(&[TokenType::Import]) {
             return self.import_decl();
         } else if self.match_token(&[TokenType::Const]) {
-            return self.const_decl();
+            return self.const_decl(is_public);
         } else if self.match_token(&[TokenType::Func]) {
-            return self.function_decl();
+            return self.function_decl(is_public);
         } else if self.match_token(&[TokenType::Struct]) {
-            return self.struct_decl();
+            return self.struct_decl(is_public);
         } else if self.match_token(&[TokenType::Enum]) {
-            return self.enum_decl();
+            return self.enum_decl(is_public);
         } else if self.match_token(&[TokenType::Construct]) {
             return self.construct_decl();
         }
@@ -58,7 +239,7 @@ impl Parser {
         ))
     }
 
-    fn import_decl(&mut self) -> Result<Node<Decl>, String> {
+    fn import_decl(&mut self) -> Result<ast::Node<ast::Decl>, String> {
         let s_pos = self.previous().pos;
         let mut path = Vec::new();
 
@@ -81,13 +262,13 @@ impl Parser {
             "Expected ';' after import declaration",
         );
 
-        Ok(Node {
-            value: Decl::Import { module: path },
+        Ok(ast::Node {
+            value: ast::Decl::Import { module: path },
             pos: s_pos,
         })
     }
 
-    fn const_decl(&mut self) -> Result<Node<Decl>, String> {
+    fn const_decl(&mut self, is_public: bool) -> Result<ast::Node<ast::Decl>, String> {
         let s_pos = self.previous().pos;
         let t_name = self.consume(TokenType::Identifier, "Expected identifier after 'const'")?;
 
@@ -100,8 +281,9 @@ impl Parser {
 
         self.consume(TokenType::SemiColon, "Expected ';' after const declaration");
 
-        Ok(Node {
-            value: Decl::Const {
+        Ok(ast::Node {
+            value: ast::Decl::Const {
+                is_public,
                 name: t_name.lexeme,
                 r#type: t_type,
                 value: value,
@@ -110,20 +292,220 @@ impl Parser {
         })
     }
 
-    fn function_decl(&mut self) -> Result<Node<Decl>, String> {
-        unimplemented!();
+    fn function_decl(&mut self, is_public: bool) -> Result<ast::Node<ast::Decl>, String> {
+        self.function_decl_internal(is_public)
+        // let s_pos = self.previous().pos;
+        // let t_name = self.consume(TokenType::Identifier, "Expected identifier after 'func'")?;
+
+        // self.consume(TokenType::LParen, "Expected '(' after function name");
+
+        // let mut params = Vec::new();
+
+        // if !self.check(TokenType::RParen) {
+        //     loop {
+        //         let p_name = self.consume(TokenType::Identifier, "Expected parameter name")?.lexeme;
+        //         self.consume(TokenType::Colon, "Expected ':' after parameter name");
+        //         let p_type = self.parse_type()?;
+
+        //         params.push((p_name, p_type));
+
+        //         if self.match_token(&[TokenType::Comma]) {
+        //             continue;
+        //         } else {
+        //             break;
+        //         }
+        //     }
+        // }
+
+        // self.consume(TokenType::RParen, "Expected ')' after function name");
+
+        // let return_type = if self.match_token(&[TokenType::Colon]) {
+        //     Some(self.parse_type()?)
+        // } else {
+        //     None
+        // };
+
+        // self.consume(TokenType::LBrace, "Expected '{' before function body");
+        // let body = self.block_stmt()?;
+
+        // let func_decl = ast::FuncDecl {
+        //     name: t_name.lexeme,
+        //     params,
+        //     return_type,
+        //     body,
+        // };
+
+        // Ok(ast::Node {
+        //     value: ast::Decl::Func(func_decl),
+        //     pos: s_pos,
+        // })
     }
 
-    fn struct_decl(&mut self) -> Result<Node<Decl>, String> {
-        unimplemented!();
+    fn struct_decl(&mut self, is_public: bool) -> Result<ast::Node<ast::Decl>, String> {
+        let s_pos = self.previous().pos;
+        let t_name = self.consume(TokenType::Identifier, "Expected struct name after 'struct'")?;
+        let name = t_name.lexeme;
+
+        self.consume(TokenType::LBrace, "Expected '{' before struct fields")?;
+
+        let mut fields = Vec::new();
+        while !self.check(TokenType::RBrace) && !self.is_at_end() {
+            let f_name = self.consume(TokenType::Identifier, "Expected field name")?;
+
+            self.consume(TokenType::Colon, "Expected ':' after field name")?;
+
+            let f_type = self.parse_type()?;
+            fields.push((f_name.lexeme, f_type));
+
+            self.consume(TokenType::SemiColon, "Expected ';' after field declaration")?;
+        }
+
+        self.consume(TokenType::RBrace, "Expected '}' after struct body")?;
+
+        Ok(ast::Node {
+            value: ast::Decl::Struct {
+                is_public,
+                name,
+                fields,
+            },
+            pos: s_pos,
+        })
     }
 
-    fn enum_decl(&mut self) -> Result<Node<Decl>, String> {
-        unimplemented!();
+    fn enum_decl(&mut self, is_public: bool) -> Result<ast::Node<ast::Decl>, String> {
+        let s_pos = self.previous().pos;
+        let t_name = self.consume(TokenType::Identifier, "Expected enum name after 'enum'")?;
+        let name = t_name.lexeme;
+
+        self.consume(TokenType::LBrace, "Expected '{' before enum variants")?;
+
+        let mut variants = Vec::new();
+        while !self.check(TokenType::RBrace) && !self.is_at_end() {
+            let v_name = self.consume(TokenType::Identifier, "Expected variant name")?;
+
+            let v_type = if self.match_token(&[TokenType::LParen]) {
+                let t = self.parse_type()?;
+                self.consume(TokenType::RParen, "Expected ')' after variant type")?;
+                Some(t)
+            } else {
+                None
+            };
+
+            variants.push((v_name.lexeme, v_type));
+
+            if self.match_token(&[TokenType::Comma]) {
+                continue;
+            } else if self.check(TokenType::RBrace) {
+                break;
+            } else {
+                return Err(format!(
+                    "Expected ',' or '}}' after enum variant at {:?}",
+                    self.peek().pos
+                ));
+            }
+        }
+
+        self.consume(TokenType::RBrace, "Expected '}' after enum body")?;
+
+        Ok(ast::Node {
+            value: ast::Decl::Enum {
+                is_public,
+                name,
+                variants,
+            },
+            pos: s_pos,
+        })
     }
 
-    fn construct_decl(&mut self) -> Result<Node<Decl>, String> {
-        unimplemented!();
+    fn construct_decl(&mut self) -> Result<ast::Node<ast::Decl>, String> {
+        let s_pos = self.previous().pos;
+        let t_name = self.consume(
+            TokenType::Identifier,
+            "Expected type name after 'construct'",
+        )?;
+        let name = t_name.lexeme;
+
+        self.consume(TokenType::LBrace, "Expected '{' before construct methods")?;
+
+        let mut methods = Vec::new();
+        while self.match_token(&[TokenType::Func]) {
+            let func_node = self.function_decl_internal(false)?;
+
+            if let ast::Decl::Func(func_decl) = func_node.value {
+                methods.push(func_decl);
+            } else {
+                unreachable!(
+                    "Internal logic error: function_decl_internal did not return a FuncDecl"
+                );
+            }
+        }
+
+        self.consume(TokenType::RBrace, "Expected '}' after construct body")?;
+
+        Ok(ast::Node {
+            value: ast::Decl::Construct { name, methods },
+            pos: s_pos,
+        })
+    }
+
+    fn function_decl_internal(&mut self, is_public: bool) -> Result<ast::Node<ast::Decl>, String> {
+        let s_pos = self.previous().pos;
+        let t_name = self.consume(TokenType::Identifier, "Expected identifier after 'func'")?;
+
+        self.consume(TokenType::LParen, "Expected '(' after function name")?;
+
+        let mut params = Vec::new();
+
+        if !self.check(TokenType::RParen) {
+            loop {
+                let p_name = self
+                    .consume(TokenType::Identifier, "Expected parameter name")?
+                    .lexeme;
+                self.consume(TokenType::Colon, "Expected ':' after parameter name")?;
+                let p_type = self.parse_type()?;
+
+                params.push((p_name, p_type));
+
+                if self.match_token(&[TokenType::Comma]) {
+                    continue;
+                } else {
+                    break;
+                }
+            }
+        }
+
+        self.consume(TokenType::RParen, "Expected ')' after function parameters")?; // FIXED BUG HERE
+
+        let return_type = if self.match_token(&[TokenType::Colon]) {
+            Some(self.parse_type()?)
+        } else {
+            None
+        };
+
+        self.consume(TokenType::LBrace, "Expected '{' before function body")?;
+        let body_stmt = self.block_stmt()?;
+
+        let body = match body_stmt.value {
+            ast::StmtKind::Block(stmts) => stmts,
+            other => {
+                return Err(format!(
+                    "Expected function body to be a block at {:?}, found {:?}",
+                    body_stmt.pos, other
+                ));
+            }
+        };
+
+        let func_decl = ast::FuncDecl {
+            name: t_name.lexeme,
+            params,
+            return_type,
+            body,
+        };
+
+        Ok(ast::Node {
+            value: ast::Decl::Func(func_decl),
+            pos: s_pos,
+        })
     }
 
     fn advance(&mut self) -> Token {
@@ -132,7 +514,7 @@ impl Parser {
         t
     }
 
-    fn parse_precedence(&mut self, min_prec: u8) -> Result<Expr, String> {
+    fn parse_precedence(&mut self, min_prec: u8) -> Result<ast::Expr, String> {
         let mut left = self.parse_primary()?;
 
         while let Some(op) = self.current_operator() {
@@ -144,9 +526,9 @@ impl Parser {
             let operator = self.advance().token_type;
             let mut right = self.parse_precedence(prec + 1)?;
 
-            left = Node {
+            left = ast::Node {
                 pos: left.pos.clone(),
-                value: ExprKind::Binary {
+                value: ast::ExprKind::Binary {
                     left: Box::new(left),
                     operator,
                     right: Box::new(right),
@@ -157,42 +539,44 @@ impl Parser {
         Ok(left)
     }
 
-    fn parse_primary(&mut self) -> Result<Expr, String> {
+    fn parse_primary(&mut self) -> Result<ast::Expr, String> {
         let token = self.advance();
 
         let node = match token.token_type {
             TokenType::IntLiteral => {
-                let value = token.lexeme.parse::<i64>().map_err(|_| {
-                    format!("Invalid integer literal at {:?}", token.pos)
-                })?;
-                Node {
+                let value = token
+                    .lexeme
+                    .parse::<i64>()
+                    .map_err(|_| format!("Invalid integer literal at {:?}", token.pos))?;
+                ast::Node {
+                    value: ast::ExprKind::Literal(ast::LiteralTypes::Int64(value)),
                     pos: token.pos,
-                    value: ExprKind::Literal(LiteralTypes::Int64(value)),
                 }
             }
             TokenType::FloatLiteral => {
-                let value = token.lexeme.parse::<f64>().map_err(|_| {
-                    format!("Invalid float literal at {:?}", token.pos)
-                })?;
-                Node {
+                let value = token
+                    .lexeme
+                    .parse::<f64>()
+                    .map_err(|_| format!("Invalid float literal at {:?}", token.pos))?;
+                ast::Node {
+                    value: ast::ExprKind::Literal(ast::LiteralTypes::Float64(value)),
                     pos: token.pos,
-                    value: ExprKind::Literal(LiteralTypes::Float64(value)),
                 }
             }
-            TokenType::StringLiteral => Node {
+            TokenType::StringLiteral => ast::Node {
+                value: ast::ExprKind::Literal(ast::LiteralTypes::String(token.lexeme)),
                 pos: token.pos,
-                value: ExprKind::Literal(LiteralTypes::String(token.lexeme)),
             },
-            TokenType::Identifier => Node {
+            TokenType::Identifier => ast::Node {
+                value: ast::ExprKind::Identifier(token.lexeme),
                 pos: token.pos,
-                value: ExprKind::Identifier(token.lexeme),
             },
             TokenType::LParen => {
                 let expr = self.expression()?;
                 self.consume(TokenType::RParen, "Expected ')' after expression")?;
-                Node {
+                ast::Node {
+                    value: ast::ExprKind::Grouping(Box::new(expr)),
                     pos: token.pos,
-                    value: ExprKind::Grouping(Box::new(expr)),
                 }
             }
             _ => return Err(format!("Unexpected token {:?} in expression", token)),
@@ -270,19 +654,19 @@ impl Parser {
         self.tokens[self.current].clone()
     }
 
-    fn parse_type(&mut self) -> Result<TypeExpr, String> {
+    fn parse_type(&mut self) -> Result<ast::TypeExpr, String> {
         if self.match_token(&[TokenType::Star]) {
             let mutable = if self.match_token(&[TokenType::Mut]) {
-                PointerKind::Mut
+                ast::PointerKind::Mut
             } else if self.match_token(&[TokenType::Const]) {
-                PointerKind::Const
+                ast::PointerKind::Const
             } else {
-                PointerKind::Default
+                ast::PointerKind::Default
             };
 
             let target = self.parse_type()?;
-            
-            return Ok(TypeExpr::Pointer {
+
+            return Ok(ast::TypeExpr::Pointer {
                 mutable,
                 target: Box::new(target),
             });
@@ -291,9 +675,12 @@ impl Parser {
         if self.match_token(&[TokenType::LSquare]) {
             let size = if self.check(TokenType::IntLiteral) {
                 let size_token = self.advance();
-                Some(size_token.lexeme.parse::<usize>().map_err(|_| {
-                    format!("Invalid array size at {:?}", size_token.pos)
-                })?)
+                Some(
+                    size_token
+                        .lexeme
+                        .parse::<usize>()
+                        .map_err(|_| format!("Invalid array size at {:?}", size_token.pos))?,
+                )
             } else {
                 None
             };
@@ -301,14 +688,16 @@ impl Parser {
             self.consume(TokenType::RSquare, "Expected ']' after array size")?;
 
             let element = self.parse_type()?;
-            return Ok(TypeExpr::Array {
+            return Ok(ast::TypeExpr::Array {
                 mutable: false,
                 size,
                 element: Box::new(element),
             });
         }
 
-        let ident = self.consume(TokenType::Identifier, "Expected type name")?.lexeme;
+        let ident = self
+            .consume(TokenType::Identifier, "Expected type name")?
+            .lexeme;
 
         if self.match_token(&[TokenType::Less]) {
             let mut args = Vec::new();
@@ -320,9 +709,9 @@ impl Parser {
                 self.consume(TokenType::Greater, "Expected '>' after generic args")?;
                 break;
             }
-            return Ok(TypeExpr::Generic(ident, args));
+            return Ok(ast::TypeExpr::Generic(ident, args));
         }
 
-        Ok(TypeExpr::Named(ident))
+        Ok(ast::TypeExpr::Named(ident))
     }
 }

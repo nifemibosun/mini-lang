@@ -127,16 +127,19 @@ pub enum Decl {
         module: Vec<String>,
     },
     Const {
+        is_public: bool,
         name: String,
         r#type: TypeExpr,
         value: Expr,
     },
     Func(FuncDecl),
     Struct {
+        is_public: bool,
         name: String,
         fields: Vec<(String, TypeExpr)>,
     },
     Enum {
+        is_public: bool,
         name: String,
         variants: Vec<(String, Option<TypeExpr>)>,
     },

@@ -9,7 +9,8 @@ const PI: float32 = 3.14159;
 
 // functions with return types that is not a unit () must specify there return type
 func test_const() {
-    const E: float32 = 2.718;
+    // Not supported yet
+    //const E: float32 = 2.718;
 }
 
 // public is the only access modifier that will exist in mini(all thing are private by default)
