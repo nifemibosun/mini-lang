@@ -2,7 +2,6 @@
 
 pub mod ast;
 
-// use crate::parser::ast;
 use crate::{
     parser::ast::Node,
     scanner::token::{Token, TokenType},
