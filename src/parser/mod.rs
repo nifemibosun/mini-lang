@@ -302,7 +302,9 @@ impl Parser {
 
         if !self.check(TokenType::RParen) {
             loop {
-                let p_name = self.consume(TokenType::Identifier, "Expected parameter name")?.lexeme;
+                let p_name = self
+                    .consume(TokenType::Identifier, "Expected parameter name")?
+                    .lexeme;
                 self.consume(TokenType::Colon, "Expected ':' after parameter name");
                 let p_type = self.parse_type()?;
 
