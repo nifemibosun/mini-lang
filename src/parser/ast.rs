@@ -115,6 +115,7 @@ pub enum StmtKind {
 /// Declarations introduce new named entities into a scope
 #[derive(Debug, PartialEq, Clone)]
 pub struct FuncDecl {
+    pub is_public: bool,
     pub name: String,
     pub params: Vec<(String, TypeExpr)>,
     pub return_type: Option<TypeExpr>,

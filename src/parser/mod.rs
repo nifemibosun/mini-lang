@@ -293,52 +293,62 @@ impl Parser {
     }
 
     fn function_decl(&mut self, is_public: bool) -> Result<ast::Node<ast::Decl>, String> {
-        self.function_decl_internal(is_public)
-        // let s_pos = self.previous().pos;
-        // let t_name = self.consume(TokenType::Identifier, "Expected identifier after 'func'")?;
+        let s_pos = self.previous().pos;
+        let t_name = self.consume(TokenType::Identifier, "Expected identifier after 'func'")?;
 
-        // self.consume(TokenType::LParen, "Expected '(' after function name");
+        self.consume(TokenType::LParen, "Expected '(' after function name");
 
-        // let mut params = Vec::new();
+        let mut params = Vec::new();
 
-        // if !self.check(TokenType::RParen) {
-        //     loop {
-        //         let p_name = self.consume(TokenType::Identifier, "Expected parameter name")?.lexeme;
-        //         self.consume(TokenType::Colon, "Expected ':' after parameter name");
-        //         let p_type = self.parse_type()?;
+        if !self.check(TokenType::RParen) {
+            loop {
+                let p_name = self.consume(TokenType::Identifier, "Expected parameter name")?.lexeme;
+                self.consume(TokenType::Colon, "Expected ':' after parameter name");
+                let p_type = self.parse_type()?;
 
-        //         params.push((p_name, p_type));
+                params.push((p_name, p_type));
 
-        //         if self.match_token(&[TokenType::Comma]) {
-        //             continue;
-        //         } else {
-        //             break;
-        //         }
-        //     }
-        // }
+                if self.match_token(&[TokenType::Comma]) {
+                    continue;
+                } else {
+                    break;
+                }
+            }
+        }
 
-        // self.consume(TokenType::RParen, "Expected ')' after function name");
+        self.consume(TokenType::RParen, "Expected ')' after function name");
 
-        // let return_type = if self.match_token(&[TokenType::Colon]) {
-        //     Some(self.parse_type()?)
-        // } else {
-        //     None
-        // };
+        let return_type = if self.match_token(&[TokenType::Colon]) {
+            Some(self.parse_type()?)
+        } else {
+            None
+        };
 
-        // self.consume(TokenType::LBrace, "Expected '{' before function body");
-        // let body = self.block_stmt()?;
+        self.consume(TokenType::LBrace, "Expected '{' before function body");
+        let body_stmt = self.block_stmt()?;
 
-        // let func_decl = ast::FuncDecl {
-        //     name: t_name.lexeme,
-        //     params,
-        //     return_type,
-        //     body,
-        // };
+        let body = match body_stmt.value {
+            ast::StmtKind::Block(stmts) => stmts,
+            other => {
+                return Err(format!(
+                    "Expected function body to be a block at {:?}, found {:?}",
+                    body_stmt.pos, other
+                ));
+            }
+        };
 
-        // Ok(ast::Node {
-        //     value: ast::Decl::Func(func_decl),
-        //     pos: s_pos,
-        // })
+        let func_decl = ast::FuncDecl {
+            is_public,
+            name: t_name.lexeme,
+            params,
+            return_type,
+            body,
+        };
+
+        Ok(ast::Node {
+            value: ast::Decl::Func(func_decl),
+            pos: s_pos,
+        })
     }
 
     fn struct_decl(&mut self, is_public: bool) -> Result<ast::Node<ast::Decl>, String> {
@@ -429,7 +439,8 @@ impl Parser {
 
         let mut methods = Vec::new();
         while self.match_token(&[TokenType::Func]) {
-            let func_node = self.function_decl_internal(false)?;
+            let is_public = self.previous().token_type == TokenType::Public;
+            let func_node = self.function_decl(is_public)?;
 
             if let ast::Decl::Func(func_decl) = func_node.value {
                 methods.push(func_decl);
@@ -444,66 +455,6 @@ impl Parser {
 
         Ok(ast::Node {
             value: ast::Decl::Construct { name, methods },
-            pos: s_pos,
-        })
-    }
-
-    fn function_decl_internal(&mut self, is_public: bool) -> Result<ast::Node<ast::Decl>, String> {
-        let s_pos = self.previous().pos;
-        let t_name = self.consume(TokenType::Identifier, "Expected identifier after 'func'")?;
-
-        self.consume(TokenType::LParen, "Expected '(' after function name")?;
-
-        let mut params = Vec::new();
-
-        if !self.check(TokenType::RParen) {
-            loop {
-                let p_name = self
-                    .consume(TokenType::Identifier, "Expected parameter name")?
-                    .lexeme;
-                self.consume(TokenType::Colon, "Expected ':' after parameter name")?;
-                let p_type = self.parse_type()?;
-
-                params.push((p_name, p_type));
-
-                if self.match_token(&[TokenType::Comma]) {
-                    continue;
-                } else {
-                    break;
-                }
-            }
-        }
-
-        self.consume(TokenType::RParen, "Expected ')' after function parameters")?; // FIXED BUG HERE
-
-        let return_type = if self.match_token(&[TokenType::Colon]) {
-            Some(self.parse_type()?)
-        } else {
-            None
-        };
-
-        self.consume(TokenType::LBrace, "Expected '{' before function body")?;
-        let body_stmt = self.block_stmt()?;
-
-        let body = match body_stmt.value {
-            ast::StmtKind::Block(stmts) => stmts,
-            other => {
-                return Err(format!(
-                    "Expected function body to be a block at {:?}, found {:?}",
-                    body_stmt.pos, other
-                ));
-            }
-        };
-
-        let func_decl = ast::FuncDecl {
-            name: t_name.lexeme,
-            params,
-            return_type,
-            body,
-        };
-
-        Ok(ast::Node {
-            value: ast::Decl::Func(func_decl),
             pos: s_pos,
         })
     }
