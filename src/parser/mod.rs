@@ -131,9 +131,9 @@ impl Parser {
     fn if_stmt(&mut self) -> Result<ast::Stmt, String> {
         let s_pos = self.previous().pos;
 
-        self.consume(TokenType::LParen, "Expected '(' after 'if'")?;
+        // self.consume(TokenType::LParen, "Expected '(' after 'if'")?;
         let condition = self.expression()?;
-        self.consume(TokenType::RParen, "Expected ')' after if condition")?;
+        // self.consume(TokenType::RParen, "Expected ')' after if condition")?;
 
         self.consume(TokenType::LBrace, "Expected '{' after if condition")?;
         let then_branch = self.block_stmt()?;
@@ -158,9 +158,9 @@ impl Parser {
     fn while_stmt(&mut self) -> Result<ast::Stmt, String> {
         let s_pos = self.previous().pos;
 
-        self.consume(TokenType::LParen, "Expected '(' after 'while'")?;
+        // self.consume(TokenType::LParen, "Expected '(' after 'while'")?;
         let condition = self.expression()?;
-        self.consume(TokenType::RParen, "Expected ')' after while condition")?;
+        // self.consume(TokenType::RParen, "Expected ')' after while condition")?;
 
         self.consume(TokenType::LBrace, "Expected '{' after while condition")?;
         let body = self.block_stmt()?;
@@ -369,7 +369,7 @@ impl Parser {
             let f_type = self.parse_type()?;
             fields.push((f_name.lexeme, f_type));
 
-            self.consume(TokenType::SemiColon, "Expected ';' after field declaration")?;
+            self.consume(TokenType::Comma, "Expected ',' after field declaration")?;
         }
 
         self.consume(TokenType::RBrace, "Expected '}' after struct body")?;
@@ -499,10 +499,10 @@ impl Parser {
             TokenType::IntLiteral => {
                 let value = token
                     .lexeme
-                    .parse::<i64>()
+                    .parse::<isize>()
                     .map_err(|_| format!("Invalid integer literal at {:?}", token.pos))?;
                 ast::Node {
-                    value: ast::ExprKind::Literal(ast::LiteralTypes::Int64(value)),
+                    value: ast::ExprKind::Literal(ast::LiteralTypes::Int(value)),
                     pos: token.pos,
                 }
             }
@@ -512,7 +512,7 @@ impl Parser {
                     .parse::<f64>()
                     .map_err(|_| format!("Invalid float literal at {:?}", token.pos))?;
                 ast::Node {
-                    value: ast::ExprKind::Literal(ast::LiteralTypes::Float64(value)),
+                    value: ast::ExprKind::Literal(ast::LiteralTypes::Float(value)),
                     pos: token.pos,
                 }
             }
@@ -581,7 +581,7 @@ impl Parser {
     }
 
     fn is_at_end(&self) -> bool {
-        self.current >= self.tokens.len()
+        self.peek().token_type == TokenType::EoF
     }
 
     /// Check if a token has a specific type that is needed
@@ -642,7 +642,6 @@ impl Parser {
 
             let element = self.parse_type()?;
             return Ok(ast::TypeExpr::Array {
-                mutable: false,
                 size,
                 element: Box::new(element),
             });
