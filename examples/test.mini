@@ -2,9 +2,25 @@ import math::constants;
 
 const PI: float32 = 3.14159;
 
+public struct Scanner {
+    source: string,
+    tokens: string,
+    start: uint64,
+    current: uint64,
+}
+
+construct Scanner {
+    func new(source: string, tokens: string): uint64 {
+        let a = source + tokens;
+    }
+}
+
 func main() {
     let mut a: int32 = 4;
     let mut b = 2;
 
     let result = a + b;
+
+    let mut str = "A boy";
+    println(str);
 }

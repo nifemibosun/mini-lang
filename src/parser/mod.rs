@@ -466,8 +466,26 @@ impl Parser {
         t
     }
 
+    fn parse_prefix(&mut self) -> Result<ast::Expr, String> {
+        if self.match_token(&[TokenType::Minus, TokenType::Bang]) {
+            let operator = self.previous().token_type;
+            let right = self.parse_prefix()?;
+            let pos = right.pos.clone();
+
+            return Ok(ast::Node {
+                value: ast::ExprKind::Unary {
+                    operator,
+                    right: Box::new(right),
+                },
+                pos,
+            });
+        }
+
+        self.parse_primary()
+    }
+
     fn parse_precedence(&mut self, min_prec: u8) -> Result<ast::Expr, String> {
-        let mut left = self.parse_primary()?;
+        let mut left = self.parse_prefix()?;
 
         while let Some(op) = self.current_operator() {
             let prec = self.precedence(&op);
@@ -494,7 +512,7 @@ impl Parser {
     fn parse_primary(&mut self) -> Result<ast::Expr, String> {
         let token = self.advance();
 
-        let node = match token.token_type {
+        let mut node = match token.token_type {
             TokenType::IntLiteral => {
                 let value = token
                     .lexeme
@@ -534,7 +552,80 @@ impl Parser {
             _ => return Err(format!("Unexpected token {:?} in expression", token)),
         };
 
+        while !self.is_at_end() {
+            if self.check(TokenType::LParen) {
+                self.advance();
+                node = self.parse_call(node)?;
+            } else if self.check(TokenType::LSquare) {
+                self.advance();
+                node = self.parse_index(node)?;
+            } else if self.check(TokenType::Dot) {
+                self.advance();
+                node = self.parse_member(node)?;
+            } else {
+                break;
+            }
+        }
+
         Ok(node)
+    }
+
+    fn parse_call(&mut self, callee: ast::Expr) -> Result<ast::Expr, String> {
+        let s_pos = callee.pos.clone();
+        let mut arguments = Vec::new();
+
+        if !self.check(TokenType::RParen) {
+            loop {
+                arguments.push(self.expression()?); 
+                if self.match_token(&[TokenType::Comma]) {
+                    continue;
+                } else {
+                    break;
+                }
+            }
+        }
+
+        let rparen = self.consume(TokenType::RParen, "Expected ')' after function arguments")?;
+        let end_pos = rparen.pos;
+
+        Ok(ast::Node {
+            value: ast::ExprKind::Call {
+                callee: Box::new(callee),
+                arguments,
+            },
+            pos: s_pos,
+        })
+    }
+
+    fn parse_index(&mut self, target: ast::Expr) -> Result<ast::Expr, String> {
+        let s_pos = target.pos.clone();
+
+        let index = self.expression()?;
+
+        self.consume(TokenType::RSquare, "Expected ']' after index expression")?;
+
+        Ok(ast::Node {
+            value: ast::ExprKind::Index {
+                target: Box::new(target),
+                index: Box::new(index),
+            },
+            pos: s_pos,
+        })
+    }
+
+    fn parse_member(&mut self, object: ast::Expr) -> Result<ast::Expr, String> {
+        let s_pos = object.pos.clone();
+
+        let t_property = self.consume(TokenType::Identifier, "Expected property name after '.'")?;
+        let property = t_property.lexeme;
+
+        Ok(ast::Node {
+            value: ast::ExprKind::Member {
+                object: Box::new(object),
+                property,
+            },
+            pos: s_pos,
+        })
     }
 
     fn current_operator(&self) -> Option<TokenType> {
