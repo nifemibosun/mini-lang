@@ -1,7 +1,7 @@
 #![allow(unused)]
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum Literal {
+pub enum LiteralTypes {
     Int(isize),
     Float(f64),
     String(String),
@@ -137,7 +137,7 @@ impl Position {
 pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,
-    pub literal: Option<Literal>,
+    pub literal: Option<LiteralTypes>,
     pub pos: Position,
 }
 
@@ -145,7 +145,7 @@ impl Token {
     pub fn new(
         token_type: TokenType,
         lexeme: String,
-        literal: Option<Literal>,
+        literal: Option<LiteralTypes>,
         pos: Position,
     ) -> Self {
         Token {

@@ -17,25 +17,25 @@ func test_const() {
 public struct User {
     name: *const string,
     age: *mut uint32,
-    email: *mut string
+    email: *mut string,
 }
 
 // method for structs can be defined using the construct keyword
 // to use a struct method(e.g. User::new_user(args))
 construct User {
     // a function with return type
-    func new_user(name: *const string, age: *mut uint32, email: *mut string): Self {
-        return User {
-            name,
-            age,
-            email
-        }
-    }
+    //func new_user(name: *const string, age: *mut uint32, email: *mut string): Self {
+    //    return User {
+    //        name,
+    //        age,
+    //        email
+    //    }
+    //}
 
     // if the return type of a function is a unit () you can explicitly say so
-    func change_email(*mut self, email: *mut string): void {
-        self.email = email;
-    }
+    //func change_email(*mut self, email: *mut string) {
+    //    self.email = email;
+    //}
 }
 
 // All executable must be inside the main function

@@ -2,7 +2,7 @@
 pub mod token;
 
 use super::MiniState;
-use crate::scanner::token::{Literal, Position, Token, TokenType};
+use crate::scanner::token::{LiteralTypes, Position, Token, TokenType};
 
 #[derive(Debug, PartialEq)]
 pub struct Scanner<'a> {
@@ -252,7 +252,7 @@ impl<'a> Scanner<'a> {
 
         self.add_token_(
             TokenType::StringLiteral,
-            Some(Literal::String(value.to_string())),
+            Some(LiteralTypes::String(value.to_string())),
         );
     }
 
@@ -276,12 +276,14 @@ impl<'a> Scanner<'a> {
 
         if is_float {
             match num_str.parse::<f64>() {
-                Ok(value) => self.add_token_(TokenType::FloatLiteral, Some(Literal::Float(value))),
+                Ok(value) => {
+                    self.add_token_(TokenType::FloatLiteral, Some(LiteralTypes::Float(value)))
+                }
                 Err(_) => self.state.error(self.pos, "Invalid float literal"),
             }
         } else {
             match num_str.parse::<isize>() {
-                Ok(value) => self.add_token_(TokenType::IntLiteral, Some(Literal::Int(value))),
+                Ok(value) => self.add_token_(TokenType::IntLiteral, Some(LiteralTypes::Int(value))),
                 Err(_) => self.state.error(self.pos, "Invalid integer literal"),
             }
         }
@@ -321,7 +323,7 @@ impl<'a> Scanner<'a> {
         self.add_token_(token_type, None);
     }
 
-    fn add_token_(&mut self, token_type: TokenType, literal: Option<Literal>) {
+    fn add_token_(&mut self, token_type: TokenType, literal: Option<LiteralTypes>) {
         let lexeme = &self.source[self.start..self.current];
         let pos = self.start_pos.clone();
         self.tokens.push(Token::new(
@@ -401,7 +403,7 @@ mod tests {
         let mut scanner = Scanner::new(source, &mut state);
         let (tokens, _) = scanner.scan_tokens();
         assert_eq!(tokens[0].token_type, TokenType::StringLiteral);
-        if let Some(Literal::String(ref s)) = tokens[0].literal {
+        if let Some(LiteralTypes::String(ref s)) = tokens[0].literal {
             assert_eq!(s, "hello world");
         } else {
             panic!("Expected string literal");

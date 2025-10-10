@@ -4,7 +4,7 @@ pub mod ast;
 
 use crate::{
     parser::ast::Node,
-    scanner::token::{Token, TokenType},
+    scanner::token::{LiteralTypes, Token, TokenType},
 };
 
 pub struct Parser {
@@ -130,9 +130,21 @@ impl Parser {
     fn if_stmt(&mut self) -> Result<ast::Stmt, String> {
         let s_pos = self.previous().pos;
 
-        // self.consume(TokenType::LParen, "Expected '(' after 'if'")?;
+        if self.check(TokenType::LParen) {
+            return Err(format!(
+                "'(' is not expected before if condition at {:?}",
+                self.peek().pos
+            ));
+        }
+
         let condition = self.expression()?;
-        // self.consume(TokenType::RParen, "Expected ')' after if condition")?;
+
+        if self.check(TokenType::RParen) {
+            return Err(format!(
+                "')' is not expected after if condition at {:?}",
+                self.peek().pos
+            ));
+        }
 
         self.consume(TokenType::LBrace, "Expected '{' after if condition")?;
         let then_branch = self.block_stmt()?;
@@ -157,9 +169,21 @@ impl Parser {
     fn while_stmt(&mut self) -> Result<ast::Stmt, String> {
         let s_pos = self.previous().pos;
 
-        // self.consume(TokenType::LParen, "Expected '(' after 'while'")?;
+        if self.check(TokenType::LParen) {
+            return Err(format!(
+                "'(' is not expected before while condition at {:?}",
+                self.peek().pos
+            ));
+        }
+        
         let condition = self.expression()?;
-        // self.consume(TokenType::RParen, "Expected ')' after while condition")?;
+
+        if self.check(TokenType::RParen) {
+            return Err(format!(
+                "')' is not expected after while condition at {:?}",
+                self.peek().pos
+            ));
+        }
 
         self.consume(TokenType::LBrace, "Expected '{' after while condition")?;
         let body = self.block_stmt()?;
@@ -439,8 +463,9 @@ impl Parser {
         self.consume(TokenType::LBrace, "Expected '{' before construct methods")?;
 
         let mut methods = Vec::new();
-        while self.match_token(&[TokenType::Func]) {
-            let is_public = self.previous().token_type == TokenType::Public;
+        while self.check(TokenType::Public) || self.check(TokenType::Func) {
+            let is_public = self.match_token(&[TokenType::Public]);
+            self.consume(TokenType::Func, "Expected 'func' after 'public'")?;
             let func_node = self.function_decl(is_public)?;
 
             if let ast::Decl::Func(func_decl) = func_node.value {
@@ -519,7 +544,7 @@ impl Parser {
                     .parse::<isize>()
                     .map_err(|_| format!("Invalid integer literal at {:?}", token.pos))?;
                 ast::Node {
-                    value: ast::ExprKind::Literal(ast::LiteralTypes::Int(value)),
+                    value: ast::ExprKind::Literal(LiteralTypes::Int(value)),
                     pos: token.pos,
                 }
             }
@@ -529,12 +554,12 @@ impl Parser {
                     .parse::<f64>()
                     .map_err(|_| format!("Invalid float literal at {:?}", token.pos))?;
                 ast::Node {
-                    value: ast::ExprKind::Literal(ast::LiteralTypes::Float(value)),
+                    value: ast::ExprKind::Literal(LiteralTypes::Float(value)),
                     pos: token.pos,
                 }
             }
             TokenType::StringLiteral => ast::Node {
-                value: ast::ExprKind::Literal(ast::LiteralTypes::String(token.lexeme)),
+                value: ast::ExprKind::Literal(LiteralTypes::String(token.lexeme)),
                 pos: token.pos,
             },
             TokenType::Identifier => ast::Node {
@@ -576,7 +601,7 @@ impl Parser {
 
         if !self.check(TokenType::RParen) {
             loop {
-                arguments.push(self.expression()?); 
+                arguments.push(self.expression()?);
                 if self.match_token(&[TokenType::Comma]) {
                     continue;
                 } else {

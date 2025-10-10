@@ -1,15 +1,6 @@
 #![allow(unused)]
 
-use crate::scanner::token::{Position, TokenType};
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum LiteralTypes {
-    Int(isize),
-    Float(f64),
-    String(String),
-    Bool(bool),
-    Char(char),
-}
+use crate::scanner::token::{LiteralTypes, Position, TokenType};
 
 pub type Program = Vec<Node<Decl>>;
 
