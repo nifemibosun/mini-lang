@@ -1,5 +1,6 @@
 mod parser;
 mod scanner;
+mod semantic;
 
 use std::env;
 use std::fs;
@@ -69,18 +70,6 @@ impl MiniState {
     }
 }
 
-fn main() {
-    let args: Vec<String> = env::args().collect();
-
-    if args.len() == 1 {
-        help_msg();
-        exit(64);
-    }
-
-    let mut state = MiniState::new();
-    help_args(args, &mut state);
-}
-
 fn run_file(state: &mut MiniState, path: &str) -> Result<()> {
     let content = fs::read_to_string(path)?;
     run(state, &content);
@@ -98,4 +87,16 @@ fn run(state: &mut MiniState, source: &str) {
     let mut parser = Parser::new(tokens);
 
     println!("{:#?}", parser.parse().unwrap());
+}
+
+fn main() {
+    let args: Vec<String> = env::args().collect();
+
+    if args.len() == 1 {
+        help_msg();
+        exit(64);
+    }
+
+    let mut state = MiniState::new();
+    help_args(args, &mut state);
 }

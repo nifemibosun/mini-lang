@@ -175,7 +175,7 @@ impl Parser {
                 self.peek().pos
             ));
         }
-        
+
         let condition = self.expression()?;
 
         if self.check(TokenType::RParen) {

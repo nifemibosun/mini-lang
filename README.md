@@ -35,7 +35,7 @@ This will compile the project and create an optimized executable in the target/r
 ## Usage
 Once compiled, you can use it to run mini source from your terminal.
 
-so create a mini source call it hello_world.mini and paste in this code:
+so create a mini source call it hello.mini and paste in this code:
 ```mini
 func mini() {
     println("Hello, Mini\n");
