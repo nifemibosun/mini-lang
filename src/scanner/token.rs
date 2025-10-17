@@ -121,7 +121,7 @@ pub enum TokenType {
     EoF,
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, Default, PartialEq, Clone, Copy)]
 pub struct Position {
     pub line: usize,
     pub col: usize,

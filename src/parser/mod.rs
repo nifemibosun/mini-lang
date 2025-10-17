@@ -48,7 +48,7 @@ impl Parser {
         } else if self.match_token(&[TokenType::For]) {
             return self.for_stmt();
         } else {
-            return self.expression_stmt();
+            return self.assign_or_expr_stmt();
         }
     }
 
@@ -223,14 +223,27 @@ impl Parser {
         })
     }
 
-    fn expression_stmt(&mut self) -> Result<ast::Stmt, String> {
+    fn assign_or_expr_stmt(&mut self) -> Result<ast::Stmt, String> {
         let expr = self.expression()?;
         let s_pos = expr.pos.clone();
 
-        self.consume(
-            TokenType::SemiColon,
-            "Expected ';' after expression statement",
-        )?;
+
+        let expr = self.expression()?;
+
+        if self.match_token(&[TokenType::Equal]) {
+            let value = self.expression()?;
+            self.consume(TokenType::SemiColon, "Expected ';' after assignment")?;
+
+            return Ok(ast::Node {
+                value: ast::StmtKind::Assign {
+                    target: expr,
+                    value,
+                },
+                pos: s_pos,
+            });
+        }
+
+        self.consume(TokenType::SemiColon, "Expected ';' after expression statement")?;
 
         Ok(ast::Node {
             value: ast::StmtKind::ExprStmt(expr),
@@ -286,7 +299,7 @@ impl Parser {
         );
 
         Ok(ast::Node {
-            value: ast::Decl::Import { module: path },
+            value: ast::Decl::Import { path },
             pos: s_pos,
         })
     }
@@ -493,13 +506,13 @@ impl Parser {
 
     fn parse_prefix(&mut self) -> Result<ast::Expr, String> {
         if self.match_token(&[TokenType::Minus, TokenType::Bang]) {
-            let operator = self.previous().token_type;
+            let op = self.previous().token_type;
             let right = self.parse_prefix()?;
             let pos = right.pos.clone();
 
             return Ok(ast::Node {
                 value: ast::ExprKind::Unary {
-                    operator,
+                    op,
                     right: Box::new(right),
                 },
                 pos,
@@ -525,7 +538,7 @@ impl Parser {
                 pos: left.pos.clone(),
                 value: ast::ExprKind::Binary {
                     left: Box::new(left),
-                    operator,
+                    op: operator,
                     right: Box::new(right),
                 },
             };
@@ -641,13 +654,13 @@ impl Parser {
     fn parse_member(&mut self, object: ast::Expr) -> Result<ast::Expr, String> {
         let s_pos = object.pos.clone();
 
-        let t_property = self.consume(TokenType::Identifier, "Expected property name after '.'")?;
-        let property = t_property.lexeme;
+        let t_field = self.consume(TokenType::Identifier, "Expected property name after '.'")?;
+        let field = t_field.lexeme;
 
         Ok(ast::Node {
             value: ast::ExprKind::Member {
                 object: Box::new(object),
-                property,
+                field,
             },
             pos: s_pos,
         })

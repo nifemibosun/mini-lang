@@ -22,5 +22,4 @@ func main() {
     let result = a + b;
 
     let mut str = "A boy";
-    println(str);
 }

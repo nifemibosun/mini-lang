@@ -39,12 +39,12 @@ pub enum ExprKind {
     Literal(LiteralTypes),
     Identifier(String),
     Unary {
-        operator: TokenType,
+        op: TokenType,
         right: Box<Expr>,
     },
     Binary {
         left: Box<Expr>,
-        operator: TokenType,
+        op: TokenType,
         right: Box<Expr>,
     },
     Grouping(Box<Expr>),
@@ -58,7 +58,7 @@ pub enum ExprKind {
     },
     Member {
         object: Box<Expr>,
-        property: String,
+        field: String,
     },
 }
 
@@ -73,6 +73,10 @@ pub enum StmtKind {
         mutable: bool,
         r#type: Option<TypeExpr>,
         initializer: Option<Expr>,
+    },
+    Assign {
+        target: Expr,
+        value: Expr,
     },
     Return(Option<Expr>),
     Block(Vec<Stmt>),
@@ -105,7 +109,7 @@ pub struct FuncDecl {
 #[derive(Debug, PartialEq, Clone)]
 pub enum Decl {
     Import {
-        module: Vec<String>,
+        path: Vec<String>,
     },
     Const {
         is_public: bool,

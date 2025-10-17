@@ -9,6 +9,7 @@ use std::process::exit;
 
 use parser::Parser;
 use scanner::{token::Position, Scanner};
+use semantic::SemanticAnalyzer;
 
 fn help_msg() {
     println!("Usage: mini <file.mini>\n");
@@ -85,8 +86,10 @@ fn run(state: &mut MiniState, source: &str) {
     let mut scanner = Scanner::new(source, state);
     let (tokens, _) = scanner.scan_tokens();
     let mut parser = Parser::new(tokens);
+    let ast = parser.parse().unwrap();
+    let mut analyzer = SemanticAnalyzer::new();
 
-    println!("{:#?}", parser.parse().unwrap());
+    println!("Semantic errs: {:#?}", analyzer.analyze(&ast));
 }
 
 fn main() {
