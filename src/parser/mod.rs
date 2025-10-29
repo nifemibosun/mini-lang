@@ -89,8 +89,8 @@ impl Parser {
                 mutable,
                 r#type,
                 initializer,
-            }, 
-            s_pos
+            },
+            s_pos,
         ))
     }
 
@@ -118,7 +118,7 @@ impl Parser {
 
         self.consume(TokenType::RBrace, "Expected '}' after block")?;
 
-        Ok(ast::Node::new(ast::StmtKind::Block(statements), s_pos,))
+        Ok(ast::Node::new(ast::StmtKind::Block(statements), s_pos))
     }
 
     fn if_stmt(&mut self) -> Result<ast::Stmt, String> {
@@ -221,7 +221,6 @@ impl Parser {
         let expr = self.expression()?;
         let s_pos = expr.pos.clone();
 
-
         let expr = self.expression()?;
 
         if self.match_token(&[TokenType::Equal]) {
@@ -237,7 +236,10 @@ impl Parser {
             ));
         }
 
-        self.consume(TokenType::SemiColon, "Expected ';' after expression statement")?;
+        self.consume(
+            TokenType::SemiColon,
+            "Expected ';' after expression statement",
+        )?;
 
         Ok(ast::Node::new(ast::StmtKind::ExprStmt(expr), s_pos))
     }
@@ -312,7 +314,7 @@ impl Parser {
                 r#type: t_type,
                 value: value,
             },
-            s_pos
+            s_pos,
         ))
     }
 
@@ -481,7 +483,10 @@ impl Parser {
 
         self.consume(TokenType::RBrace, "Expected '}' after construct body")?;
 
-        Ok(ast::Node::new(ast::Decl::Construct { name, methods }, s_pos))
+        Ok(ast::Node::new(
+            ast::Decl::Construct { name, methods },
+            s_pos,
+        ))
     }
 
     fn advance(&mut self) -> Token {
@@ -633,7 +638,7 @@ impl Parser {
                 target: Box::new(target),
                 index: Box::new(index),
             },
-            s_pos
+            s_pos,
         ))
     }
 

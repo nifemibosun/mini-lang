@@ -12,10 +12,7 @@ pub struct Node<T> {
 
 impl<T> Node<T> {
     pub fn new(value: T, pos: Position) -> Self {
-        Node {
-            value,
-            pos,
-        }
+        Node { value, pos }
     }
 }
 
@@ -73,13 +70,6 @@ pub enum ExprKind {
 
 /// Statements perform actions, but do not themselves produce a value
 pub type Stmt = Node<StmtKind>;
-
-pub struct  Let {
-    pub name: String,
-    pub mutable: bool,
-    pub r#type: Option<TypeExpr>,
-    pub initializer: Option<Expr>,
-}
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum StmtKind {

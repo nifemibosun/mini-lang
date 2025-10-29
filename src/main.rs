@@ -7,7 +7,7 @@ use std::io::Result;
 use std::process::exit;
 
 use parser::Parser;
-use scanner::{token::Position, Scanner};
+use scanner::{Scanner, token::Position};
 
 fn help_msg() {
     println!("Usage: mini [Option?] [Command?] [filename?]\n");
@@ -40,7 +40,7 @@ fn help_args(args: Vec<String>, state: &mut MiniState) {
                 exit(64);
             }
         }
-    }  else if args.len() == 3 {
+    } else if args.len() == 3 {
         match args[1].as_str() {
             "comp" | "run" => {
                 let filename = &args[2];

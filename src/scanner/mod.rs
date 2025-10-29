@@ -337,9 +337,6 @@ impl<'a> Scanner<'a> {
     }
 }
 
-
-
-
 /// Tests for scanner
 #[cfg(test)]
 mod tests {
