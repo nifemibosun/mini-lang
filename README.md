@@ -42,11 +42,17 @@ func mini() {
 }
 ```
 
-### Running a File
+### Compiling or Running a File
 To execute a mini source file:
 
 ``` bash
-.\target\release\mini hello.mini
+# This compiles the file and output a .exe
+.\target\release\mini comp hello.mini
+```
+
+``` bash
+# This compiles the file and output a .exe, then it executes the .exe
+.\target\release\mini run hello.mini
 ```
 
 
@@ -69,5 +75,5 @@ mini -v
 ## Project Status
 Mini is currently in its very early stages.
 
-Contributing
-Contributions are very much welcomed!
+## Contributing
+Contributions are very much welcomed(check the contribution guide for help on how to do so)!

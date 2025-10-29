@@ -1,6 +1,5 @@
 mod parser;
 mod scanner;
-mod semantic;
 
 use std::env;
 use std::fs;
@@ -9,17 +8,21 @@ use std::process::exit;
 
 use parser::Parser;
 use scanner::{token::Position, Scanner};
-use semantic::SemanticAnalyzer;
 
 fn help_msg() {
-    println!("Usage: mini <file.mini>\n");
+    println!("Usage: mini [Option?] [Command?] [filename?]\n");
+    // Options
     println!("Options:");
-    println!("  -h, --help         Shows this help message");
-    println!("  -v, --version      Shows version information");
+    println!("  -h, --help               Shows this help message");
+    println!("  -v, --version            Print version info and exit \n");
+    // Commands
+    println!("Commands:");
+    println!("    comp      Print version info and exit");
+    println!("    run       Print version info and exit \n");
 }
 
 fn help_args(args: Vec<String>, state: &mut MiniState) {
-    if args.len() > 2 {
+    if args.len() > 4 {
         help_msg();
         exit(64);
     } else if args.len() == 2 {
@@ -28,12 +31,19 @@ fn help_args(args: Vec<String>, state: &mut MiniState) {
                 help_msg();
                 exit(0);
             }
-            "--version" | "-v" | "-V" => {
+            "--version" | "-v" => {
                 println!("mini v0.1.0");
                 exit(0);
             }
             _ => {
-                let filename = &args[1];
+                help_msg();
+                exit(64);
+            }
+        }
+    }  else if args.len() == 3 {
+        match args[1].as_str() {
+            "comp" | "run" => {
+                let filename = &args[2];
                 if !filename.ends_with(".mini") {
                     eprintln!("Error: file must end with `.mini`");
                     exit(65);
@@ -43,6 +53,10 @@ fn help_args(args: Vec<String>, state: &mut MiniState) {
                     eprintln!("Error: {}", err);
                     exit(74);
                 }
+            }
+            _ => {
+                help_msg();
+                exit(64);
             }
         }
     } else {
@@ -87,9 +101,8 @@ fn run(state: &mut MiniState, source: &str) {
     let (tokens, _) = scanner.scan_tokens();
     let mut parser = Parser::new(tokens);
     let ast = parser.parse().unwrap();
-    let mut analyzer = SemanticAnalyzer::new();
 
-    println!("Semantic errs: {:#?}", analyzer.analyze(&ast));
+    println!("AST: {:#?}", &ast);
 }
 
 fn main() {

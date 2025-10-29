@@ -83,15 +83,15 @@ impl Parser {
             "Expected ';' after variable declaration",
         )?;
 
-        Ok(ast::Node {
-            value: ast::StmtKind::Let {
+        Ok(ast::Node::new(
+            ast::StmtKind::Let {
                 name,
                 mutable,
                 r#type,
                 initializer,
-            },
-            pos: s_pos,
-        })
+            }, 
+            s_pos
+        ))
     }
 
     fn return_stmt(&mut self) -> Result<ast::Stmt, String> {
@@ -105,10 +105,7 @@ impl Parser {
 
         self.consume(TokenType::SemiColon, "Expected ';' after return value")?;
 
-        Ok(ast::Node {
-            value: ast::StmtKind::Return(expr),
-            pos: s_pos,
-        })
+        Ok(ast::Node::new(ast::StmtKind::Return(expr), s_pos))
     }
 
     fn block_stmt(&mut self) -> Result<ast::Stmt, String> {
@@ -121,10 +118,7 @@ impl Parser {
 
         self.consume(TokenType::RBrace, "Expected '}' after block")?;
 
-        Ok(ast::Node {
-            value: ast::StmtKind::Block(statements),
-            pos: s_pos,
-        })
+        Ok(ast::Node::new(ast::StmtKind::Block(statements), s_pos,))
     }
 
     fn if_stmt(&mut self) -> Result<ast::Stmt, String> {
@@ -156,14 +150,14 @@ impl Parser {
             None
         };
 
-        Ok(ast::Node {
-            value: ast::StmtKind::If {
+        Ok(ast::Node::new(
+            ast::StmtKind::If {
                 condition,
                 then_branch: Box::new(then_branch),
                 else_branch: else_branch.map(Box::new),
             },
-            pos: s_pos,
-        })
+            s_pos,
+        ))
     }
 
     fn while_stmt(&mut self) -> Result<ast::Stmt, String> {
@@ -188,13 +182,13 @@ impl Parser {
         self.consume(TokenType::LBrace, "Expected '{' after while condition")?;
         let body = self.block_stmt()?;
 
-        Ok(ast::Node {
-            value: ast::StmtKind::While {
+        Ok(ast::Node::new(
+            ast::StmtKind::While {
                 condition,
                 body: Box::new(body),
             },
-            pos: s_pos,
-        })
+            s_pos,
+        ))
     }
 
     fn for_stmt(&mut self) -> Result<ast::Stmt, String> {
@@ -213,14 +207,14 @@ impl Parser {
         self.consume(TokenType::LBrace, "Expected '{' before 'for' body")?;
         let body = self.block_stmt()?;
 
-        Ok(ast::Node {
-            value: ast::StmtKind::For {
+        Ok(ast::Node::new(
+            ast::StmtKind::For {
                 iterator,
                 iterable,
                 body: Box::new(body),
             },
-            pos: s_pos,
-        })
+            s_pos,
+        ))
     }
 
     fn assign_or_expr_stmt(&mut self) -> Result<ast::Stmt, String> {
@@ -234,21 +228,18 @@ impl Parser {
             let value = self.expression()?;
             self.consume(TokenType::SemiColon, "Expected ';' after assignment")?;
 
-            return Ok(ast::Node {
-                value: ast::StmtKind::Assign {
+            return Ok(ast::Node::new(
+                ast::StmtKind::Assign {
                     target: expr,
                     value,
                 },
-                pos: s_pos,
-            });
+                s_pos,
+            ));
         }
 
         self.consume(TokenType::SemiColon, "Expected ';' after expression statement")?;
 
-        Ok(ast::Node {
-            value: ast::StmtKind::ExprStmt(expr),
-            pos: s_pos,
-        })
+        Ok(ast::Node::new(ast::StmtKind::ExprStmt(expr), s_pos))
     }
 
     pub fn declaration(&mut self) -> Result<ast::Node<ast::Decl>, String> {
@@ -298,10 +289,7 @@ impl Parser {
             "Expected ';' after import declaration",
         );
 
-        Ok(ast::Node {
-            value: ast::Decl::Import { path },
-            pos: s_pos,
-        })
+        Ok(ast::Node::new(ast::Decl::Import { path }, s_pos))
     }
 
     fn const_decl(&mut self, is_public: bool) -> Result<ast::Node<ast::Decl>, String> {
@@ -317,15 +305,15 @@ impl Parser {
 
         self.consume(TokenType::SemiColon, "Expected ';' after const declaration");
 
-        Ok(ast::Node {
-            value: ast::Decl::Const {
+        Ok(ast::Node::new(
+            ast::Decl::Const {
                 is_public,
                 name: t_name.lexeme,
                 r#type: t_type,
                 value: value,
             },
-            pos: s_pos,
-        })
+            s_pos
+        ))
     }
 
     fn function_decl(&mut self, is_public: bool) -> Result<ast::Node<ast::Decl>, String> {
@@ -383,10 +371,7 @@ impl Parser {
             body,
         };
 
-        Ok(ast::Node {
-            value: ast::Decl::Func(func_decl),
-            pos: s_pos,
-        })
+        Ok(ast::Node::new(ast::Decl::Func(func_decl), s_pos))
     }
 
     fn struct_decl(&mut self, is_public: bool) -> Result<ast::Node<ast::Decl>, String> {
@@ -405,19 +390,23 @@ impl Parser {
             let f_type = self.parse_type()?;
             fields.push((f_name.lexeme, f_type));
 
+            if self.check(TokenType::RBrace) {
+                break;
+            }
+
             self.consume(TokenType::Comma, "Expected ',' after field declaration")?;
         }
 
         self.consume(TokenType::RBrace, "Expected '}' after struct body")?;
 
-        Ok(ast::Node {
-            value: ast::Decl::Struct {
+        Ok(ast::Node::new(
+            ast::Decl::Struct {
                 is_public,
                 name,
                 fields,
             },
-            pos: s_pos,
-        })
+            s_pos,
+        ))
     }
 
     fn enum_decl(&mut self, is_public: bool) -> Result<ast::Node<ast::Decl>, String> {
@@ -455,14 +444,14 @@ impl Parser {
 
         self.consume(TokenType::RBrace, "Expected '}' after enum body")?;
 
-        Ok(ast::Node {
-            value: ast::Decl::Enum {
+        Ok(ast::Node::new(
+            ast::Decl::Enum {
                 is_public,
                 name,
                 variants,
             },
-            pos: s_pos,
-        })
+            s_pos,
+        ))
     }
 
     fn construct_decl(&mut self) -> Result<ast::Node<ast::Decl>, String> {
@@ -492,10 +481,7 @@ impl Parser {
 
         self.consume(TokenType::RBrace, "Expected '}' after construct body")?;
 
-        Ok(ast::Node {
-            value: ast::Decl::Construct { name, methods },
-            pos: s_pos,
-        })
+        Ok(ast::Node::new(ast::Decl::Construct { name, methods }, s_pos))
     }
 
     fn advance(&mut self) -> Token {
@@ -626,13 +612,13 @@ impl Parser {
         let rparen = self.consume(TokenType::RParen, "Expected ')' after function arguments")?;
         let end_pos = rparen.pos;
 
-        Ok(ast::Node {
-            value: ast::ExprKind::Call {
+        Ok(ast::Node::new(
+            ast::ExprKind::Call {
                 callee: Box::new(callee),
                 arguments,
             },
-            pos: s_pos,
-        })
+            s_pos,
+        ))
     }
 
     fn parse_index(&mut self, target: ast::Expr) -> Result<ast::Expr, String> {
@@ -642,13 +628,13 @@ impl Parser {
 
         self.consume(TokenType::RSquare, "Expected ']' after index expression")?;
 
-        Ok(ast::Node {
-            value: ast::ExprKind::Index {
+        Ok(ast::Node::new(
+            ast::ExprKind::Index {
                 target: Box::new(target),
                 index: Box::new(index),
             },
-            pos: s_pos,
-        })
+            s_pos
+        ))
     }
 
     fn parse_member(&mut self, object: ast::Expr) -> Result<ast::Expr, String> {
@@ -657,13 +643,13 @@ impl Parser {
         let t_field = self.consume(TokenType::Identifier, "Expected property name after '.'")?;
         let field = t_field.lexeme;
 
-        Ok(ast::Node {
-            value: ast::ExprKind::Member {
+        Ok(ast::Node::new(
+            ast::ExprKind::Member {
                 object: Box::new(object),
                 field,
             },
-            pos: s_pos,
-        })
+            s_pos,
+        ))
     }
 
     fn current_operator(&self) -> Option<TokenType> {
@@ -704,14 +690,6 @@ impl Parser {
         }
     }
 
-    fn previous(&mut self) -> Token {
-        self.tokens[self.current - 1].clone()
-    }
-
-    fn is_at_end(&self) -> bool {
-        self.peek().token_type == TokenType::EoF
-    }
-
     /// Check if a token has a specific type that is needed
     fn check(&mut self, t_type: TokenType) -> bool {
         if self.is_at_end() {
@@ -731,13 +709,9 @@ impl Parser {
         false
     }
 
-    fn peek(&self) -> Token {
-        self.tokens[self.current].clone()
-    }
-
     fn parse_type(&mut self) -> Result<ast::TypeExpr, String> {
         if self.match_token(&[TokenType::Star]) {
-            let mutable = if self.match_token(&[TokenType::Mut]) {
+            let kind = if self.match_token(&[TokenType::Mut]) {
                 ast::PointerKind::Mut
             } else if self.match_token(&[TokenType::Const]) {
                 ast::PointerKind::Const
@@ -748,7 +722,7 @@ impl Parser {
             let target = self.parse_type()?;
 
             return Ok(ast::TypeExpr::Pointer {
-                mutable,
+                kind,
                 target: Box::new(target),
             });
         }
@@ -793,5 +767,20 @@ impl Parser {
         }
 
         Ok(ast::TypeExpr::Named(ident))
+    }
+
+    #[inline]
+    fn peek(&self) -> Token {
+        self.tokens[self.current].clone()
+    }
+
+    #[inline]
+    fn previous(&mut self) -> Token {
+        self.tokens[self.current - 1].clone()
+    }
+
+    #[inline]
+    fn is_at_end(&self) -> bool {
+        self.peek().token_type == TokenType::EoF
     }
 }

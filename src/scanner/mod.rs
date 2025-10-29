@@ -1,4 +1,5 @@
 #![allow(unused)]
+
 pub mod token;
 
 use super::MiniState;
@@ -197,32 +198,6 @@ impl<'a> Scanner<'a> {
         c
     }
 
-    fn single_line_comment(&mut self) {
-        while self.peek() != '\n' && !self.is_at_end() {
-            self.advance();
-        }
-    }
-
-    #[inline]
-    fn is_at_end(&self) -> bool {
-        self.current >= self.source.len()
-    }
-
-    #[inline]
-    fn is_alpha(&self, c: char) -> bool {
-        c.is_alphabetic() || c == '_'
-    }
-
-    #[inline]
-    fn is_digit(&self, c: char) -> bool {
-        c.is_numeric()
-    }
-
-    #[inline]
-    fn is_alpha_num(&self, c: char) -> bool {
-        self.is_alpha(c) || self.is_digit(c)
-    }
-
     fn identifier(&mut self) {
         while self.is_alpha_num(self.peek()) {
             self.advance();
@@ -318,11 +293,6 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    #[inline]
-    fn add_token(&mut self, token_type: TokenType) {
-        self.add_token_(token_type, None);
-    }
-
     fn add_token_(&mut self, token_type: TokenType, literal: Option<LiteralTypes>) {
         let lexeme = &self.source[self.start..self.current];
         let pos = self.start_pos.clone();
@@ -333,7 +303,42 @@ impl<'a> Scanner<'a> {
             self.start_pos,
         ));
     }
+
+    #[inline]
+    fn add_token(&mut self, token_type: TokenType) {
+        self.add_token_(token_type, None);
+    }
+
+    #[inline]
+    fn single_line_comment(&mut self) {
+        while self.peek() != '\n' && !self.is_at_end() {
+            self.advance();
+        }
+    }
+
+    #[inline]
+    fn is_at_end(&self) -> bool {
+        self.current >= self.source.len()
+    }
+
+    #[inline]
+    fn is_alpha(&self, c: char) -> bool {
+        c.is_alphabetic() || c == '_'
+    }
+
+    #[inline]
+    fn is_digit(&self, c: char) -> bool {
+        c.is_numeric()
+    }
+
+    #[inline]
+    fn is_alpha_num(&self, c: char) -> bool {
+        self.is_alpha(c) || self.is_digit(c)
+    }
 }
+
+
+
 
 /// Tests for scanner
 #[cfg(test)]
