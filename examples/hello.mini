@@ -1,5 +1,6 @@
 import std::io;
 
-public func main() {
+func main() {
     println("Hello, Mini\n");
+    return 0;
 }

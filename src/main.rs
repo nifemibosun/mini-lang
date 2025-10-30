@@ -17,8 +17,8 @@ fn help_msg() {
     println!("  -v, --version            Print version info and exit \n");
     // Commands
     println!("Commands:");
-    println!("    comp      Print version info and exit");
-    println!("    run       Print version info and exit \n");
+    println!("    comp      Compile the specified file");
+    println!("    run       Run a binary or example of the local file \n");
 }
 
 fn help_args(args: Vec<String>, state: &mut MiniState) {

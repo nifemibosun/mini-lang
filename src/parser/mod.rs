@@ -221,8 +221,6 @@ impl Parser {
         let expr = self.expression()?;
         let s_pos = expr.pos.clone();
 
-        let expr = self.expression()?;
-
         if self.match_token(&[TokenType::Equal]) {
             let value = self.expression()?;
             self.consume(TokenType::SemiColon, "Expected ';' after assignment")?;
@@ -501,13 +499,13 @@ impl Parser {
             let right = self.parse_prefix()?;
             let pos = right.pos.clone();
 
-            return Ok(ast::Node {
-                value: ast::ExprKind::Unary {
+            return Ok(ast::Node::new(
+                ast::ExprKind::Unary {
                     op,
                     right: Box::new(right),
                 },
                 pos,
-            });
+            ));
         }
 
         self.parse_primary()
@@ -525,14 +523,14 @@ impl Parser {
             let operator = self.advance().token_type;
             let mut right = self.parse_precedence(prec + 1)?;
 
-            left = ast::Node {
-                pos: left.pos.clone(),
-                value: ast::ExprKind::Binary {
-                    left: Box::new(left),
+            left = ast::Node::new(
+                ast::ExprKind::Binary {
+                    left: Box::new(left.clone()),
                     op: operator,
                     right: Box::new(right),
                 },
-            };
+                left.pos.clone(),
+            );
         }
 
         Ok(left)
@@ -547,36 +545,29 @@ impl Parser {
                     .lexeme
                     .parse::<isize>()
                     .map_err(|_| format!("Invalid integer literal at {:?}", token.pos))?;
-                ast::Node {
-                    value: ast::ExprKind::Literal(LiteralTypes::Int(value)),
-                    pos: token.pos,
-                }
+                ast::Node::new(ast::ExprKind::Literal(LiteralTypes::Int(value)), token.pos)
             }
             TokenType::FloatLiteral => {
                 let value = token
                     .lexeme
                     .parse::<f64>()
                     .map_err(|_| format!("Invalid float literal at {:?}", token.pos))?;
-                ast::Node {
-                    value: ast::ExprKind::Literal(LiteralTypes::Float(value)),
-                    pos: token.pos,
-                }
+                ast::Node::new(
+                    ast::ExprKind::Literal(LiteralTypes::Float(value)),
+                    token.pos,
+                )
             }
-            TokenType::StringLiteral => ast::Node {
-                value: ast::ExprKind::Literal(LiteralTypes::String(token.lexeme)),
-                pos: token.pos,
-            },
-            TokenType::Identifier => ast::Node {
-                value: ast::ExprKind::Identifier(token.lexeme),
-                pos: token.pos,
-            },
+            TokenType::StringLiteral => ast::Node::new(
+                ast::ExprKind::Literal(LiteralTypes::String(token.lexeme)),
+                token.pos,
+            ),
+            TokenType::Identifier => {
+                ast::Node::new(ast::ExprKind::Identifier(token.lexeme), token.pos)
+            }
             TokenType::LParen => {
                 let expr = self.expression()?;
                 self.consume(TokenType::RParen, "Expected ')' after expression")?;
-                ast::Node {
-                    value: ast::ExprKind::Grouping(Box::new(expr)),
-                    pos: token.pos,
-                }
+                ast::Node::new(ast::ExprKind::Grouping(Box::new(expr)), token.pos)
             }
             _ => return Err(format!("Unexpected token {:?} in expression", token)),
         };

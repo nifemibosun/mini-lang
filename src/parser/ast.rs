@@ -72,6 +72,17 @@ pub enum ExprKind {
 pub type Stmt = Node<StmtKind>;
 
 #[derive(Debug, PartialEq, Clone)]
+pub enum Pattern {
+    Wildcard,
+    Literal(LiteralTypes),
+    Identifier(String),
+    Variant {
+        name: String,
+        inner: Option<Box<Pattern>>,
+    },
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub enum StmtKind {
     ExprStmt(Expr),
     Let {
@@ -99,6 +110,10 @@ pub enum StmtKind {
         iterator: String,
         iterable: Expr,
         body: Box<Stmt>,
+    },
+    Match {
+        expr: Expr,
+        arms: Vec<(Pattern, Vec<Stmt>)>,
     },
 }
 
