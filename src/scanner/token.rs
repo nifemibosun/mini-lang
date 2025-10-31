@@ -113,6 +113,7 @@ pub enum TokenType {
     Loop,
     Await,
     Async,
+    Type,
 
     // Access modifier
     Public,

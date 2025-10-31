@@ -221,13 +221,15 @@ impl Parser {
         let expr = self.expression()?;
         let s_pos = expr.pos.clone();
 
-        if self.match_token(&[TokenType::Equal]) {
+        if self.match_token(&[TokenType::Equal, TokenType::PlusEqual, TokenType::MinusEqual, TokenType::StarEqual, TokenType::SlashEqual]) {
+            let operator = self.previous().token_type;
             let value = self.expression()?;
             self.consume(TokenType::SemiColon, "Expected ';' after assignment")?;
 
             return Ok(ast::Node::new(
                 ast::StmtKind::Assign {
                     target: expr,
+                    operator,
                     value,
                 },
                 s_pos,
@@ -249,7 +251,9 @@ impl Parser {
             return self.import_decl();
         } else if self.match_token(&[TokenType::Const]) {
             return self.const_decl(is_public);
-        } else if self.match_token(&[TokenType::Func]) {
+        } else if self.match_token(&[TokenType::Type]) {
+            return self.type_decl(is_public);
+        }else if self.match_token(&[TokenType::Func]) {
             return self.function_decl(is_public);
         } else if self.match_token(&[TokenType::Struct]) {
             return self.struct_decl(is_public);
@@ -311,6 +315,26 @@ impl Parser {
                 name: t_name.lexeme,
                 r#type: t_type,
                 value: value,
+            },
+            s_pos,
+        ))
+    }
+
+    fn type_decl(&mut self, is_public: bool) -> Result<ast::Node<ast::Decl>, String> {
+        let s_pos = self.previous().pos;
+        let t_name = self.consume(TokenType::Identifier, "Expected identifier after 'type'")?;
+
+        self.consume(TokenType::Equal, "Expected '=' after alias name");
+
+        let t_type = self.parse_type()?;
+
+        self.consume(TokenType::SemiColon, "Expected ';' after const declaration");
+
+        Ok(ast::Node::new(
+            ast::Decl::Type {
+                is_public,
+                name: t_name.lexeme,
+                r#type: t_type,
             },
             s_pos,
         ))

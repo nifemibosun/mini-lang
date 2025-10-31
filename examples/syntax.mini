@@ -4,13 +4,22 @@ import std::memory;
 
 
 // constant are declarations, but they can also exist inside function
-// and types must be explicitly stated
+// and types must be explicitly stated(You can also make them public)
 const PI: float32 = 3.14159;
+
+
+// Type Alias is now supported(You can also make them public)
+type x = string;
+
 
 // functions with return types that is not a unit () must specify there return type
 func test_const() {
     // Not supported yet
     //const E: float32 = 2.718;
+    let mut E: float32 = 2.718;
+
+    // Assignment now supported for more operator
+    E += 5;
 }
 
 // public is the only access modifier that will exist in mini(all thing are private by default)

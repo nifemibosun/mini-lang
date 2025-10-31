@@ -93,6 +93,7 @@ pub enum StmtKind {
     },
     Assign {
         target: Expr,
+        operator: TokenType,
         value: Expr,
     },
     Return(Option<Expr>),
@@ -137,6 +138,11 @@ pub enum Decl {
         name: String,
         r#type: TypeExpr,
         value: Expr,
+    },
+    Type {
+        is_public: bool,
+        name: String,
+        r#type: TypeExpr,
     },
     Func(FuncDecl),
     Struct {

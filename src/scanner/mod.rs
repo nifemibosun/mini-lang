@@ -289,6 +289,7 @@ impl<'a> Scanner<'a> {
             "await" => Some(TokenType::Await),
             "async" => Some(TokenType::Async),
             "public" => Some(TokenType::Public),
+            "type" => Some(TokenType::Type),
             _ => None,
         }
     }
