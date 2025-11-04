@@ -1,11 +1,18 @@
+// file: src/parser/mod.rs
+//! Parser module
+//!
+//! The parser transforms a stream of tokens (produced by the scanner) into
+//! an abstract syntax tree (AST). Public APIs:
+//! - Parser::new(tokens) -> Parser
+//! - Parser::parse() -> Result<ast::Program, String>
+//!
+//! The module exposes the AST under the `ast` submodule.
+
 #![allow(unused)]
 
 pub mod ast;
 
-use crate::{
-    parser::ast::Node,
-    scanner::token::{LiteralTypes, Token, TokenType},
-};
+use crate::scanner::token::{LiteralTypes, Token, TokenType};
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -13,12 +20,10 @@ pub struct Parser {
 }
 
 impl Parser {
-    /// Construct a new parser instance
     pub fn new(tokens: Vec<Token>) -> Self {
         Parser { tokens, current: 0 }
     }
 
-    /// The main parse method on every parser instance
     pub fn parse(&mut self) -> Result<ast::Program, String> {
         let mut program = Vec::new();
 
@@ -221,7 +226,24 @@ impl Parser {
         let expr = self.expression()?;
         let s_pos = expr.pos.clone();
 
-        if self.match_token(&[TokenType::Equal, TokenType::PlusEqual, TokenType::MinusEqual, TokenType::StarEqual, TokenType::SlashEqual]) {
+        if self.match_token(&[
+            TokenType::Equal,
+            TokenType::PlusEqual,
+            TokenType::MinusEqual,
+            TokenType::StarEqual,
+            TokenType::SlashEqual,
+        ]) {
+            let is_valid_target = match expr.value {
+                ast::ExprKind::Identifier(_)
+                | ast::ExprKind::Index { .. }
+                | ast::ExprKind::Member { .. } => true,
+                _ => false,
+            };
+
+            if !is_valid_target {
+                return Err(format!("Invalid assignment at {:#?}", expr.pos));
+            }
+
             let operator = self.previous().token_type;
             let value = self.expression()?;
             self.consume(TokenType::SemiColon, "Expected ';' after assignment")?;
@@ -253,7 +275,7 @@ impl Parser {
             return self.const_decl(is_public);
         } else if self.match_token(&[TokenType::Type]) {
             return self.type_decl(is_public);
-        }else if self.match_token(&[TokenType::Func]) {
+        } else if self.match_token(&[TokenType::Func]) {
             return self.function_decl(is_public);
         } else if self.match_token(&[TokenType::Struct]) {
             return self.struct_decl(is_public);
@@ -710,7 +732,6 @@ impl Parser {
         }
     }
 
-    /// Check if a token has a specific type that is needed
     fn check(&mut self, t_type: TokenType) -> bool {
         if self.is_at_end() {
             return false;

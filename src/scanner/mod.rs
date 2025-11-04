@@ -1,18 +1,25 @@
+// file: src/scanner/mod.rs
+//! Scanner (lexer) module
+//!
+//! The scanner turns a source string into a stream of tokens. Each token
+//! contains a TokenType, lexeme, optional literal and position information.
+//! The scanner is designed to be UTF-8 safe and to report unterminated
+//! strings or other lexical errors via the shared MiniState.
+
 #![allow(unused)]
 
 pub mod token;
 
 use super::MiniState;
-use crate::scanner::token::{LiteralTypes, Position, Token, TokenType};
 
 #[derive(Debug, PartialEq)]
 pub struct Scanner<'a> {
     source: &'a str,
-    tokens: Vec<Token>,
+    tokens: Vec<token::Token>,
     start: usize,
     current: usize,
-    pos: Position,
-    start_pos: Position,
+    pos: token::Position,
+    start_pos: token::Position,
     state: &'a mut MiniState,
 }
 
@@ -23,21 +30,21 @@ impl<'a> Scanner<'a> {
             tokens: Vec::new(),
             start: 0,
             current: 0,
-            pos: Position::new(),
-            start_pos: Position::new(),
+            pos: token::Position::new(),
+            start_pos: token::Position::new(),
             state,
         }
     }
 
-    pub fn scan_tokens(&mut self) -> (Vec<Token>, bool) {
+    pub fn scan_tokens(&mut self) -> (Vec<token::Token>, bool) {
         while !self.is_at_end() {
             self.start = self.current;
             self.start_pos = self.pos.clone();
             self.scan_token();
         }
 
-        self.tokens.push(Token::new(
-            TokenType::EoF,
+        self.tokens.push(token::Token::new(
+            token::TokenType::EoF,
             "".to_string(),
             None,
             self.pos.clone(),
@@ -49,97 +56,97 @@ impl<'a> Scanner<'a> {
         let c = self.advance();
 
         match c {
-            '(' => self.add_token(TokenType::LParen),
-            ')' => self.add_token(TokenType::RParen),
-            '{' => self.add_token(TokenType::LBrace),
-            '}' => self.add_token(TokenType::RBrace),
-            '[' => self.add_token(TokenType::LSquare),
-            ']' => self.add_token(TokenType::RSquare),
-            ';' => self.add_token(TokenType::SemiColon),
-            ',' => self.add_token(TokenType::Comma),
-            '.' => self.add_token(TokenType::Dot),
-            '?' => self.add_token(TokenType::Question),
-            '@' => self.add_token(TokenType::At),
-            '#' => self.add_token(TokenType::Pound),
-            '$' => self.add_token(TokenType::Dollar),
+            '(' => self.add_token(token::TokenType::LParen),
+            ')' => self.add_token(token::TokenType::RParen),
+            '{' => self.add_token(token::TokenType::LBrace),
+            '}' => self.add_token(token::TokenType::RBrace),
+            '[' => self.add_token(token::TokenType::LSquare),
+            ']' => self.add_token(token::TokenType::RSquare),
+            ';' => self.add_token(token::TokenType::SemiColon),
+            ',' => self.add_token(token::TokenType::Comma),
+            '.' => self.add_token(token::TokenType::Dot),
+            '?' => self.add_token(token::TokenType::Question),
+            '@' => self.add_token(token::TokenType::At),
+            '#' => self.add_token(token::TokenType::Pound),
+            '$' => self.add_token(token::TokenType::Dollar),
             '"' => self.string(),
             ':' => {
                 if self.match_token(':') {
-                    self.add_token(TokenType::ColonColon);
+                    self.add_token(token::TokenType::ColonColon);
                 } else {
-                    self.add_token(TokenType::Colon);
+                    self.add_token(token::TokenType::Colon);
                 }
             }
             '+' => {
                 if self.match_token('=') {
-                    self.add_token(TokenType::PlusEqual);
+                    self.add_token(token::TokenType::PlusEqual);
                 } else {
-                    self.add_token(TokenType::Plus);
+                    self.add_token(token::TokenType::Plus);
                 }
             }
             '-' => {
                 if self.match_token('=') {
-                    self.add_token(TokenType::MinusEqual);
+                    self.add_token(token::TokenType::MinusEqual);
                 } else {
-                    self.add_token(TokenType::Minus);
+                    self.add_token(token::TokenType::Minus);
                 }
             }
             '*' => {
                 if self.match_token('=') {
-                    self.add_token(TokenType::StarEqual);
+                    self.add_token(token::TokenType::StarEqual);
                 } else {
-                    self.add_token(TokenType::Star);
+                    self.add_token(token::TokenType::Star);
                 }
             }
             '/' => {
                 if self.match_token('=') {
-                    self.add_token(TokenType::SlashEqual);
+                    self.add_token(token::TokenType::SlashEqual);
                 } else if self.match_token('/') {
                     self.single_line_comment();
                 } else {
-                    self.add_token(TokenType::Slash);
+                    self.add_token(token::TokenType::Slash);
                 }
             }
             '=' => {
                 if self.match_token('=') {
-                    self.add_token(TokenType::EqualEqual);
+                    self.add_token(token::TokenType::EqualEqual);
                 } else {
-                    self.add_token(TokenType::Equal);
+                    self.add_token(token::TokenType::Equal);
                 }
             }
             '!' => {
                 if self.match_token('=') {
-                    self.add_token(TokenType::BangEqual);
+                    self.add_token(token::TokenType::BangEqual);
                 } else {
-                    self.add_token(TokenType::Bang);
+                    self.add_token(token::TokenType::Bang);
                 }
             }
             '<' => {
                 if self.match_token('=') {
-                    self.add_token(TokenType::LessEqual);
+                    self.add_token(token::TokenType::LessEqual);
                 } else {
-                    self.add_token(TokenType::Less);
+                    self.add_token(token::TokenType::Less);
                 }
             }
             '>' => {
                 if self.match_token('=') {
-                    self.add_token(TokenType::GreaterEqual);
+                    self.add_token(token::TokenType::GreaterEqual);
                 } else {
-                    self.add_token(TokenType::Greater);
+                    self.add_token(token::TokenType::Greater);
                 }
             }
             '&' => {
                 if self.match_token('&') {
-                    self.add_token(TokenType::And);
+                    self.add_token(token::TokenType::And);
                 } else {
-                    self.add_token(TokenType::Ampersand);
+                    self.add_token(token::TokenType::Ampersand);
                 }
             }
             '|' => {
                 if self.match_token('|') {
-                    self.add_token(TokenType::Or);
+                    self.add_token(token::TokenType::Or);
                 } else {
-                    self.add_token(TokenType::Bar);
+                    self.add_token(token::TokenType::Bar);
                 }
             }
             ' ' | '\r' | '\t' | '\n' => {}
@@ -207,7 +214,7 @@ impl<'a> Scanner<'a> {
 
         match self.keywords(text) {
             Some(token_type) => self.add_token(token_type.clone()),
-            None => self.add_token(TokenType::Identifier),
+            None => self.add_token(token::TokenType::Identifier),
         }
     }
 
@@ -226,8 +233,8 @@ impl<'a> Scanner<'a> {
         let value = &self.source[self.start + 1..self.current - 1];
 
         self.add_token_(
-            TokenType::StringLiteral,
-            Some(LiteralTypes::String(value.to_string())),
+            token::TokenType::StringLiteral,
+            Some(token::LiteralTypes::String(value.to_string())),
         );
     }
 
@@ -251,53 +258,57 @@ impl<'a> Scanner<'a> {
 
         if is_float {
             match num_str.parse::<f64>() {
-                Ok(value) => {
-                    self.add_token_(TokenType::FloatLiteral, Some(LiteralTypes::Float(value)))
-                }
+                Ok(value) => self.add_token_(
+                    token::TokenType::FloatLiteral,
+                    Some(token::LiteralTypes::Float(value)),
+                ),
                 Err(_) => self.state.error(self.pos, "Invalid float literal"),
             }
         } else {
             match num_str.parse::<isize>() {
-                Ok(value) => self.add_token_(TokenType::IntLiteral, Some(LiteralTypes::Int(value))),
+                Ok(value) => self.add_token_(
+                    token::TokenType::IntLiteral,
+                    Some(token::LiteralTypes::Int(value)),
+                ),
                 Err(_) => self.state.error(self.pos, "Invalid integer literal"),
             }
         }
     }
 
-    fn keywords(&mut self, text: &str) -> Option<TokenType> {
+    fn keywords(&mut self, text: &str) -> Option<token::TokenType> {
         match text {
-            "if" => Some(TokenType::If),
-            "else" => Some(TokenType::Else),
-            "while" => Some(TokenType::While),
-            "func" => Some(TokenType::Func),
-            "return" => Some(TokenType::Return),
-            "let" => Some(TokenType::Let),
-            "const" => Some(TokenType::Const),
-            "mut" => Some(TokenType::Mut),
-            "true" => Some(TokenType::True),
-            "false" => Some(TokenType::False),
-            "match" => Some(TokenType::Match),
-            "import" => Some(TokenType::Import),
-            "for" => Some(TokenType::For),
-            "in" => Some(TokenType::In),
-            "struct" => Some(TokenType::Struct),
-            "enum" => Some(TokenType::Enum),
-            "Self" => Some(TokenType::SelfUpper),
-            "self" => Some(TokenType::SelfLower),
-            "construct" => Some(TokenType::Construct),
-            "loop" => Some(TokenType::Loop),
-            "await" => Some(TokenType::Await),
-            "async" => Some(TokenType::Async),
-            "public" => Some(TokenType::Public),
-            "type" => Some(TokenType::Type),
+            "if" => Some(token::TokenType::If),
+            "else" => Some(token::TokenType::Else),
+            "while" => Some(token::TokenType::While),
+            "func" => Some(token::TokenType::Func),
+            "return" => Some(token::TokenType::Return),
+            "let" => Some(token::TokenType::Let),
+            "const" => Some(token::TokenType::Const),
+            "mut" => Some(token::TokenType::Mut),
+            "true" => Some(token::TokenType::True),
+            "false" => Some(token::TokenType::False),
+            "match" => Some(token::TokenType::Match),
+            "import" => Some(token::TokenType::Import),
+            "for" => Some(token::TokenType::For),
+            "in" => Some(token::TokenType::In),
+            "struct" => Some(token::TokenType::Struct),
+            "enum" => Some(token::TokenType::Enum),
+            "Self" => Some(token::TokenType::SelfUpper),
+            "self" => Some(token::TokenType::SelfLower),
+            "construct" => Some(token::TokenType::Construct),
+            "loop" => Some(token::TokenType::Loop),
+            "await" => Some(token::TokenType::Await),
+            "async" => Some(token::TokenType::Async),
+            "public" => Some(token::TokenType::Public),
+            "type" => Some(token::TokenType::Type),
             _ => None,
         }
     }
 
-    fn add_token_(&mut self, token_type: TokenType, literal: Option<LiteralTypes>) {
+    fn add_token_(&mut self, token_type: token::TokenType, literal: Option<token::LiteralTypes>) {
         let lexeme = &self.source[self.start..self.current];
         let pos = self.start_pos.clone();
-        self.tokens.push(Token::new(
+        self.tokens.push(token::Token::new(
             token_type,
             lexeme.to_string(),
             literal,
@@ -306,7 +317,7 @@ impl<'a> Scanner<'a> {
     }
 
     #[inline]
-    fn add_token(&mut self, token_type: TokenType) {
+    fn add_token(&mut self, token_type: token::TokenType) {
         self.add_token_(token_type, None);
     }
 
@@ -344,7 +355,7 @@ mod tests {
     use super::*;
     use crate::scanner::*;
 
-    fn scan_types(source: &str) -> Vec<TokenType> {
+    fn scan_types(source: &str) -> Vec<token::TokenType> {
         let mut state = MiniState::new();
         let mut scanner = Scanner::new(source, &mut state);
         let (tokens, _) = scanner.scan_tokens();
@@ -358,14 +369,14 @@ mod tests {
         assert_eq!(
             types,
             vec![
-                TokenType::LParen,
-                TokenType::RParen,
-                TokenType::LBrace,
-                TokenType::RBrace,
-                TokenType::Comma,
-                TokenType::Dot,
-                TokenType::SemiColon,
-                TokenType::EoF
+                token::TokenType::LParen,
+                token::TokenType::RParen,
+                token::TokenType::LBrace,
+                token::TokenType::RBrace,
+                token::TokenType::Comma,
+                token::TokenType::Dot,
+                token::TokenType::SemiColon,
+                token::TokenType::EoF
             ]
         );
     }
@@ -377,14 +388,14 @@ mod tests {
         assert_eq!(
             types,
             vec![
-                TokenType::If,
-                TokenType::Else,
-                TokenType::While,
-                TokenType::Func,
-                TokenType::Return,
-                TokenType::Let,
-                TokenType::Identifier,
-                TokenType::EoF
+                token::TokenType::If,
+                token::TokenType::Else,
+                token::TokenType::While,
+                token::TokenType::Func,
+                token::TokenType::Return,
+                token::TokenType::Let,
+                token::TokenType::Identifier,
+                token::TokenType::EoF
             ]
         );
     }
@@ -395,8 +406,8 @@ mod tests {
         let mut state = MiniState::new();
         let mut scanner = Scanner::new(source, &mut state);
         let (tokens, _) = scanner.scan_tokens();
-        assert_eq!(tokens[0].token_type, TokenType::IntLiteral);
-        assert_eq!(tokens[1].token_type, TokenType::FloatLiteral);
+        assert_eq!(tokens[0].token_type, token::TokenType::IntLiteral);
+        assert_eq!(tokens[1].token_type, token::TokenType::FloatLiteral);
     }
 
     #[test]
@@ -405,8 +416,8 @@ mod tests {
         let mut state = MiniState::new();
         let mut scanner = Scanner::new(source, &mut state);
         let (tokens, _) = scanner.scan_tokens();
-        assert_eq!(tokens[0].token_type, TokenType::StringLiteral);
-        if let Some(LiteralTypes::String(ref s)) = tokens[0].literal {
+        assert_eq!(tokens[0].token_type, token::TokenType::StringLiteral);
+        if let Some(token::LiteralTypes::String(ref s)) = tokens[0].literal {
             assert_eq!(s, "hello world");
         } else {
             panic!("Expected string literal");
@@ -419,7 +430,11 @@ mod tests {
         let types = scan_types(source);
         assert_eq!(
             types,
-            vec![TokenType::Let, TokenType::Identifier, TokenType::EoF]
+            vec![
+                token::TokenType::Let,
+                token::TokenType::Identifier,
+                token::TokenType::EoF
+            ]
         );
     }
 
@@ -442,21 +457,21 @@ mod tests {
         assert_eq!(
             types,
             vec![
-                TokenType::Plus,
-                TokenType::PlusEqual,
-                TokenType::Minus,
-                TokenType::MinusEqual,
-                TokenType::Star,
-                TokenType::StarEqual,
-                TokenType::Slash,
-                TokenType::SlashEqual,
-                TokenType::EqualEqual,
-                TokenType::BangEqual,
-                TokenType::Less,
-                TokenType::LessEqual,
-                TokenType::Greater,
-                TokenType::GreaterEqual,
-                TokenType::EoF
+                token::TokenType::Plus,
+                token::TokenType::PlusEqual,
+                token::TokenType::Minus,
+                token::TokenType::MinusEqual,
+                token::TokenType::Star,
+                token::TokenType::StarEqual,
+                token::TokenType::Slash,
+                token::TokenType::SlashEqual,
+                token::TokenType::EqualEqual,
+                token::TokenType::BangEqual,
+                token::TokenType::Less,
+                token::TokenType::LessEqual,
+                token::TokenType::Greater,
+                token::TokenType::GreaterEqual,
+                token::TokenType::EoF
             ]
         );
     }
@@ -467,7 +482,11 @@ mod tests {
         let types = scan_types(source);
         assert_eq!(
             types,
-            vec![TokenType::True, TokenType::False, TokenType::EoF]
+            vec![
+                token::TokenType::True,
+                token::TokenType::False,
+                token::TokenType::EoF
+            ]
         );
     }
 }

@@ -6,9 +6,6 @@ use std::fs;
 use std::io::Result;
 use std::process::exit;
 
-use parser::Parser;
-use scanner::{Scanner, token::Position};
-
 fn help_msg() {
     println!("Usage: mini [Option?] [Command?] [filename?]\n");
     // Options
@@ -75,11 +72,11 @@ impl MiniState {
         MiniState { had_error: false }
     }
 
-    pub fn error(&mut self, pos: Position, message: &str) {
+    pub fn error(&mut self, pos: scanner::token::Position, message: &str) {
         self.report(pos, message);
     }
 
-    fn report(&mut self, pos: Position, message: &str) {
+    fn report(&mut self, pos: scanner::token::Position, message: &str) {
         eprintln!("Error at {}:{}: {}", pos.line, pos.col, message);
         self.had_error = true;
     }
@@ -97,9 +94,9 @@ fn run_file(state: &mut MiniState, path: &str) -> Result<()> {
 }
 
 fn run(state: &mut MiniState, source: &str) {
-    let mut scanner = Scanner::new(source, state);
+    let mut scanner = scanner::Scanner::new(source, state);
     let (tokens, _) = scanner.scan_tokens();
-    let mut parser = Parser::new(tokens);
+    let mut parser = parser::Parser::new(tokens);
     let ast = parser.parse().unwrap();
 
     println!("AST: {:#?}", &ast);
