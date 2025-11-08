@@ -2,5 +2,4 @@ import std::io;
 
 func main() {
     println("Hello, Mini\n");
-    return 0;
 }
