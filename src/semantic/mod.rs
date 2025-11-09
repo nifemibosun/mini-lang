@@ -1,5 +1,6 @@
-pub mod symbol_table;
+#![allow(unused)]
 
+pub mod symbol_table;
 
 pub struct SemanticAnalyzer {
     symbols: symbol_table::SymbolTable,

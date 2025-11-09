@@ -59,7 +59,7 @@ pub enum ValueType {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Value {
     v_type: Type,
-    literal: ValueType, 
+    literal: ValueType,
 }
 
 impl Value {
@@ -84,7 +84,7 @@ impl Value {
 
             ValueType::String(_) => Type::String,
             ValueType::Bool(_) => Type::Bool,
-            ValueType::Char(_) => Type::Char
+            ValueType::Char(_) => Type::Char,
         };
         Value { v_type, literal }
     }
@@ -105,10 +105,10 @@ pub enum SymbolTableError {
     TypeMismatch {
         name: String,
         expected: Type,
-        found: Type
+        found: Type,
     },
     UndefinedVariable(String),
-    CannotExitGlobalScope
+    CannotExitGlobalScope,
 }
 
 impl std::fmt::Display for SymbolTableError {
@@ -117,9 +117,17 @@ impl std::fmt::Display for SymbolTableError {
         match self {
             Redefinition(n) => write!(f, "Symbol '{}' is being redefined in the same scope", n),
             ImmutableAssignment(n) => write!(f, "Cannot assign to immutable variable '{}'", n),
-            TypeMismatch { name, expected, found } => write!(f, "Type mismatch for '{}': expected {:?}, got {:?}", name, expected, found),
+            TypeMismatch {
+                name,
+                expected,
+                found,
+            } => write!(
+                f,
+                "Type mismatch for '{}': expected {:?}, got {:?}",
+                name, expected, found
+            ),
             UndefinedVariable(n) => write!(f, "Undefined variable '{}'", n),
-            CannotExitGlobalScope => write!(f, "Cannot exit global scope")
+            CannotExitGlobalScope => write!(f, "Cannot exit global scope"),
         }
     }
 }
@@ -131,7 +139,9 @@ pub struct SymbolTable {
 
 impl SymbolTable {
     pub fn new() -> Self {
-        Self { scopes: vec![HashMap::new()] }
+        Self {
+            scopes: vec![HashMap::new()],
+        }
     }
 
     pub fn enter_scope(&mut self) {
@@ -166,7 +176,13 @@ impl SymbolTable {
         Ok(())
     }
 
-    pub fn declare(&mut self, name: &str, decl_type: Option<Type>, init: Option<ValueType>, mutable: bool) -> Result<(), SymbolTableError> {
+    pub fn declare(
+        &mut self,
+        name: &str,
+        decl_type: Option<Type>,
+        init: Option<ValueType>,
+        mutable: bool,
+    ) -> Result<(), SymbolTableError> {
         if let Some(_) = self.current_scope().get(name) {
             return Err(SymbolTableError::Redefinition(name.to_string()));
         }
@@ -174,7 +190,7 @@ impl SymbolTable {
         let value = init.map(Value::new);
         let s_type = match (decl_type, &value) {
             (Some(t), Some(v)) if t != v.v_type => {
-                return Err(SymbolTableError::TypeMismatch { 
+                return Err(SymbolTableError::TypeMismatch {
                     name: name.to_string(),
                     expected: t,
                     found: v.v_type.clone(),
@@ -195,7 +211,7 @@ impl SymbolTable {
             name: name.to_string(),
             s_type,
             value,
-            mutable
+            mutable,
         };
 
         self.current_scope().insert(name.to_string(), symbol);
@@ -227,7 +243,7 @@ impl SymbolTable {
                     return Err(SymbolTableError::ImmutableAssignment(name.to_string()));
                 }
                 if symbol.s_type != new_value.v_type {
-                    return Err(SymbolTableError::TypeMismatch { 
+                    return Err(SymbolTableError::TypeMismatch {
                         name: name.to_string(),
                         expected: symbol.s_type.clone(),
                         found: new_value.v_type,
