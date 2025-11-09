@@ -13,7 +13,7 @@ pub enum Type {
     IntN,
 
     // UnSigned Integer types
-    UInt,
+    UInt8,
     UInt16,
     UInt32,
     UInt64,
@@ -30,7 +30,7 @@ pub enum Type {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum ValueTypes {
+pub enum ValueType {
     // Signed Integer types
     Int8(i8),
     Int16(i16),
@@ -59,9 +59,36 @@ pub enum ValueTypes {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Value {
     v_type: Type,
-    literal: ValueTypes, 
+    literal: ValueType, 
 }
 
+impl Value {
+    pub fn new(literal: ValueType) -> Self {
+        let v_type = match literal {
+            ValueType::Int8(_) => Type::Int8,
+            ValueType::Int16(_) => Type::Int16,
+            ValueType::Int32(_) => Type::Int32,
+            ValueType::Int64(_) => Type::Int64,
+            ValueType::Int128(_) => Type::Int128,
+            ValueType::IntN(_) => Type::IntN,
+
+            ValueType::UInt8(_) => Type::UInt8,
+            ValueType::UInt16(_) => Type::UInt16,
+            ValueType::UInt32(_) => Type::UInt32,
+            ValueType::UInt64(_) => Type::UInt64,
+            ValueType::UInt128(_) => Type::UInt128,
+            ValueType::UIntN(_) => Type::UIntN,
+
+            ValueType::Float32(_) => Type::Float32,
+            ValueType::Float64(_) => Type::Float64,
+
+            ValueType::String(_) => Type::String,
+            ValueType::Bool(_) => Type::Bool,
+            ValueType::Char(_) => Type::Char
+        };
+        Value { v_type, literal }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Symbol {
@@ -69,6 +96,32 @@ pub struct Symbol {
     s_type: Type,
     value: Option<Value>,
     mutable: bool,
+}
+
+#[derive(Debug, Clone)]
+pub enum SymbolTableError {
+    Redefinition(String),
+    ImmutableAssignment(String),
+    TypeMismatch {
+        name: String,
+        expected: Type,
+        found: Type
+    },
+    UndefinedVariable(String),
+    CannotExitGlobalScope
+}
+
+impl std::fmt::Display for SymbolTableError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use SymbolTableError::*;
+        match self {
+            Redefinition(n) => write!(f, "Symbol '{}' is being redefined in the same scope", n),
+            ImmutableAssignment(n) => write!(f, "Cannot assign to immutable variable '{}'", n),
+            TypeMismatch { name, expected, found } => write!(f, "Type mismatch for '{}': expected {:?}, got {:?}", name, expected, found),
+            UndefinedVariable(n) => write!(f, "Undefined variable '{}'", n),
+            CannotExitGlobalScope => write!(f, "Cannot exit global scope")
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -85,11 +138,12 @@ impl SymbolTable {
         self.scopes.push(HashMap::new());
     }
 
-    pub fn exit_scope(&mut self) {
+    pub fn exit_scope(&mut self) -> Result<(), SymbolTableError> {
         if self.scopes.len() > 1 {
             self.scopes.pop();
+            Ok(())
         } else {
-            panic!("Cannot exit global scope");
+            Err(SymbolTableError::CannotExitGlobalScope)
         }
     }
 
@@ -101,14 +155,51 @@ impl SymbolTable {
         self.scopes.len() - 1
     }
 
-    pub fn define(&mut self, name: &str, symbol: Symbol) {
+    pub fn define(&mut self, name: &str, symbol: Symbol) -> Result<(), SymbolTableError> {
         let scope = self.current_scope();
 
         if scope.contains_key(&name.to_string()) {
-            println!("Warning: symbol `{}` is being redefined in the same scope", name);
+            return Err(SymbolTableError::Redefinition((name.to_string())));
         }
 
         scope.insert(name.to_string(), symbol);
+        Ok(())
+    }
+
+    pub fn declare(&mut self, name: &str, decl_type: Option<Type>, init: Option<ValueType>, mutable: bool) -> Result<(), SymbolTableError> {
+        if let Some(_) = self.current_scope().get(name) {
+            return Err(SymbolTableError::Redefinition(name.to_string()));
+        }
+
+        let value = init.map(Value::new);
+        let s_type = match (decl_type, &value) {
+            (Some(t), Some(v)) if t != v.v_type => {
+                return Err(SymbolTableError::TypeMismatch { 
+                    name: name.to_string(),
+                    expected: t,
+                    found: v.v_type.clone(),
+                });
+            }
+            (Some(t), _) => t,
+            (None, Some(v)) => v.v_type.clone(),
+            (None, None) => {
+                return Err(SymbolTableError::TypeMismatch {
+                    name: name.to_string(),
+                    expected: Type::IntN,
+                    found: Type::IntN,
+                });
+            }
+        };
+
+        let symbol = Symbol {
+            name: name.to_string(),
+            s_type,
+            value,
+            mutable
+        };
+
+        self.current_scope().insert(name.to_string(), symbol);
+        Ok(())
     }
 
     pub fn resolve(&self, name: &str) -> Option<&Symbol> {
@@ -120,19 +211,32 @@ impl SymbolTable {
         None
     }
 
-    pub fn assign(&mut self, name: &str, new_value: Value) -> Result<(), String> {
+    pub fn resolve_mut(&mut self, name: &str) -> Option<&mut Symbol> {
+        for scope in self.scopes.iter_mut().rev() {
+            if scope.contains_key(name) {
+                return scope.get_mut(name);
+            }
+        }
+        None
+    }
+
+    pub fn assign(&mut self, name: &str, new_value: Value) -> Result<(), SymbolTableError> {
         for scope in self.scopes.iter_mut().rev() {
             if let Some(symbol) = scope.get_mut(name) {
                 if !symbol.mutable {
-                    return Err(format!("Cannot assign to immutable variable `{}`", name));
+                    return Err(SymbolTableError::ImmutableAssignment(name.to_string()));
                 }
                 if symbol.s_type != new_value.v_type {
-                    return Err(format!("Type mismatch for `{}`: expected {:?}, got {:?}", name, symbol.s_type, new_value.v_type));
+                    return Err(SymbolTableError::TypeMismatch { 
+                        name: name.to_string(),
+                        expected: symbol.s_type.clone(),
+                        found: new_value.v_type,
+                    });
                 }
                 symbol.value = Some(new_value);
                 return Ok(());
             }
         }
-        Err(format!("Undefined variable `{}`", name))
+        Err(SymbolTableError::UndefinedVariable(name.to_string()))
     }
 }
