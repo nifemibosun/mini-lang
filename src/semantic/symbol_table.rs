@@ -108,6 +108,7 @@ pub enum SymbolTableError {
         found: Type,
     },
     UndefinedVariable(String),
+    MissingTypeOrInitializer(String),
     CannotExitGlobalScope,
 }
 
@@ -127,6 +128,7 @@ impl std::fmt::Display for SymbolTableError {
                 name, expected, found
             ),
             UndefinedVariable(n) => write!(f, "Undefined variable '{}'", n),
+            MissingTypeOrInitializer(n) => write!(f, "Variable '{}' must be initialized or have an explicit type", n),
             CannotExitGlobalScope => write!(f, "Cannot exit global scope"),
         }
     }
@@ -199,11 +201,7 @@ impl SymbolTable {
             (Some(t), _) => t,
             (None, Some(v)) => v.v_type.clone(),
             (None, None) => {
-                return Err(SymbolTableError::TypeMismatch {
-                    name: name.to_string(),
-                    expected: Type::IntN,
-                    found: Type::IntN,
-                });
+                return Err(SymbolTableError::MissingTypeOrInitializer(name.to_string()));
             }
         };
 
@@ -229,8 +227,8 @@ impl SymbolTable {
 
     pub fn resolve_mut(&mut self, name: &str) -> Option<&mut Symbol> {
         for scope in self.scopes.iter_mut().rev() {
-            if scope.contains_key(name) {
-                return scope.get_mut(name);
+            if let Some(symbol) = scope.get_mut(name) {
+                return Some(symbol);
             }
         }
         None
