@@ -1,0 +1,5 @@
+// For partial test on features that are still being implemented
+
+const TEST: int32 = 127;
+
+type Str = string;

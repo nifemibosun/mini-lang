@@ -1,8 +1,12 @@
 #![allow(unused)]
 
 use std::collections::HashMap;
+use crate::{
+    parser::ast, 
+    scanner::token
+};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Type {
     // Signed Integer types
     Int8,
@@ -31,7 +35,7 @@ pub enum Type {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ValueType {
-    // Signed Integer types
+    // Signed Integer value types
     Int8(i8),
     Int16(i16),
     Int32(i32),
@@ -39,7 +43,7 @@ pub enum ValueType {
     Int128(i128),
     IntN(isize),
 
-    // UnSigned Integer types
+    // UnSigned Integer value types
     UInt8(u8),
     UInt16(u16),
     UInt32(u32),
@@ -47,7 +51,7 @@ pub enum ValueType {
     UInt128(u128),
     UIntN(usize),
 
-    // Float types
+    // Float value types
     Float32(f32),
     Float64(f64),
 
@@ -56,10 +60,104 @@ pub enum ValueType {
     Char(char),
 }
 
+/// Takes a TypeExpr as input and return symbol type
+pub fn convert_type_expr_to_type(type_expr: ast::TypeExpr) -> Result<Type, String> {
+    match type_expr {
+        ast::TypeExpr::Named(ty_expr) => {
+            let s_type = match ty_expr.as_str() {
+                "int8" => Type::Int8,
+                "int16" => Type::Int16,
+                "int32" => Type::Int32,
+                "int64" => Type::Int64,
+                "int128" => Type::Int128,
+                "int_n" => Type::IntN,
+
+                "uint8" => Type::UInt8,
+                "uint16" => Type::UInt16,
+                "uint32" => Type::UInt32,
+                "uint64" => Type::UInt64,
+                "uint128" => Type::UInt128,
+                "uint_n" => Type::UIntN,
+
+                "float32" => Type::Float32,
+                "float64" => Type::Float64,
+
+                "string" => Type::String,
+                "bool" => Type::Bool,
+                "char" => Type::Char,
+                _ => todo!()
+            };
+
+            Ok(s_type)
+        }
+        _ => Err("todo".to_string())
+    }
+}
+
+pub fn convert_expr_to_val_type(expr: ast::Expr, s_type: Type) -> Result<ValueType, String> {
+    match expr.value {
+        ast::ExprKind::Literal(lit) => {
+            let v_type = match lit {
+                token::LiteralTypes::Int(i_lit) => {
+                    match s_type {
+                        Type::Int8 => ValueType::Int8(i_lit.try_into().unwrap()),
+                        Type::Int16 => ValueType::Int16(i_lit.try_into().unwrap()),
+                        Type::Int32 => ValueType::Int32(i_lit.try_into().unwrap()),
+                        Type::Int64 => ValueType::Int64(i_lit.try_into().unwrap()),
+                        Type::Int128 => ValueType::Int128(i_lit.try_into().unwrap()),
+                        Type::IntN => ValueType::IntN(i_lit),
+
+                        Type::UInt8 => ValueType::UInt8(i_lit.try_into().unwrap()),
+                        Type::UInt16 => ValueType::UInt16(i_lit.try_into().unwrap()),
+                        Type::UInt32 => ValueType::UInt32(i_lit.try_into().unwrap()),
+                        Type::UInt64 => ValueType::UInt64(i_lit.try_into().unwrap()),
+                        Type::UInt128 => ValueType::UInt128(i_lit.try_into().unwrap()),
+                        Type::UIntN => ValueType::UIntN(i_lit.try_into().unwrap()),
+                        _ => todo!()
+                    }
+                }
+                token::LiteralTypes::Float(f_lit) => {
+                    match s_type {
+                        // Type::Float32 => ValueType::Float32(f_lit.try_into().unwrap()),
+                        Type::Float64 => ValueType::Float64(f_lit),
+                        _ => todo!("Coming soon float")
+                    }
+                }
+
+                token::LiteralTypes::String(s_lit) => {
+                    match s_type {
+                        Type::String => ValueType::String(s_lit),
+                        _ => todo!()
+                    }
+                }
+
+                token::LiteralTypes::Bool(bool_lit) => {
+                    match s_type {
+                        Type::Bool => ValueType::Bool(bool_lit),
+                        _ => todo!()
+                    }
+                }
+
+                token::LiteralTypes::Char(char_lit) => {
+                    match s_type {
+                        Type::Char => ValueType::Char(char_lit),
+                        _ => todo!()
+                    }
+                }
+                _ => todo!()
+            };
+
+            Ok(v_type)
+        }
+        _ => Err("todo".to_string())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Value {
-    v_type: Type,
-    literal: ValueType,
+    // Value type
+    pub v_type: Type,
+    pub literal: ValueType,
 }
 
 impl Value {
@@ -92,10 +190,11 @@ impl Value {
 
 #[derive(Debug, Clone)]
 pub struct Symbol {
-    name: String,
-    s_type: Type,
-    value: Option<Value>,
-    mutable: bool,
+    pub name: String,
+    // Symbol type
+    pub s_type: Type,
+    pub value: Option<Value>,
+    pub mutable: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -171,7 +270,7 @@ impl SymbolTable {
         let scope = self.current_scope();
 
         if scope.contains_key(&name.to_string()) {
-            return Err(SymbolTableError::Redefinition((name.to_string())));
+            return Err(SymbolTableError::Redefinition(name.to_string()));
         }
 
         scope.insert(name.to_string(), symbol);

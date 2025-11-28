@@ -99,8 +99,9 @@ fn run(state: &mut MiniState, source: &str) {
     let (tokens, _) = scanner.scan_tokens();
     let mut parser = parser::Parser::new(tokens);
     let ast = parser.parse().unwrap();
+    let semantic = semantic::SemanticAnalyzer::new(ast).visit_node();
 
-    println!("AST: {:#?}", &ast);
+    println!("AST: {:#?}", &semantic);
 }
 
 fn main() {
