@@ -1,12 +1,8 @@
 #![allow(unused)]
 
 use std::collections::HashMap;
-use crate::{
-    parser::ast, 
-    scanner::token
-};
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Type {
     // Signed Integer types
     Int8,
@@ -28,9 +24,12 @@ pub enum Type {
     Float32,
     Float64,
 
+    // Other types
     String,
     Bool,
     Char,
+    Struct(String),
+    Unit,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -60,109 +59,15 @@ pub enum ValueType {
     Char(char),
 }
 
-/// Takes a TypeExpr as input and return symbol type
-pub fn convert_type_expr_to_type(type_expr: ast::TypeExpr) -> Result<Type, String> {
-    match type_expr {
-        ast::TypeExpr::Named(ty_expr) => {
-            let s_type = match ty_expr.as_str() {
-                "int8" => Type::Int8,
-                "int16" => Type::Int16,
-                "int32" => Type::Int32,
-                "int64" => Type::Int64,
-                "int128" => Type::Int128,
-                "int_n" => Type::IntN,
-
-                "uint8" => Type::UInt8,
-                "uint16" => Type::UInt16,
-                "uint32" => Type::UInt32,
-                "uint64" => Type::UInt64,
-                "uint128" => Type::UInt128,
-                "uint_n" => Type::UIntN,
-
-                "float32" => Type::Float32,
-                "float64" => Type::Float64,
-
-                "string" => Type::String,
-                "bool" => Type::Bool,
-                "char" => Type::Char,
-                _ => todo!()
-            };
-
-            Ok(s_type)
-        }
-        _ => Err("todo".to_string())
-    }
-}
-
-pub fn convert_expr_to_val_type(expr: ast::Expr, s_type: Type) -> Result<ValueType, String> {
-    match expr.value {
-        ast::ExprKind::Literal(lit) => {
-            let v_type = match lit {
-                token::LiteralTypes::Int(i_lit) => {
-                    match s_type {
-                        Type::Int8 => ValueType::Int8(i_lit.try_into().unwrap()),
-                        Type::Int16 => ValueType::Int16(i_lit.try_into().unwrap()),
-                        Type::Int32 => ValueType::Int32(i_lit.try_into().unwrap()),
-                        Type::Int64 => ValueType::Int64(i_lit.try_into().unwrap()),
-                        Type::Int128 => ValueType::Int128(i_lit.try_into().unwrap()),
-                        Type::IntN => ValueType::IntN(i_lit),
-
-                        Type::UInt8 => ValueType::UInt8(i_lit.try_into().unwrap()),
-                        Type::UInt16 => ValueType::UInt16(i_lit.try_into().unwrap()),
-                        Type::UInt32 => ValueType::UInt32(i_lit.try_into().unwrap()),
-                        Type::UInt64 => ValueType::UInt64(i_lit.try_into().unwrap()),
-                        Type::UInt128 => ValueType::UInt128(i_lit.try_into().unwrap()),
-                        Type::UIntN => ValueType::UIntN(i_lit.try_into().unwrap()),
-                        _ => todo!()
-                    }
-                }
-                token::LiteralTypes::Float(f_lit) => {
-                    match s_type {
-                        // Type::Float32 => ValueType::Float32(f_lit.try_into().unwrap()),
-                        Type::Float64 => ValueType::Float64(f_lit),
-                        _ => todo!("Coming soon float")
-                    }
-                }
-
-                token::LiteralTypes::String(s_lit) => {
-                    match s_type {
-                        Type::String => ValueType::String(s_lit),
-                        _ => todo!()
-                    }
-                }
-
-                token::LiteralTypes::Bool(bool_lit) => {
-                    match s_type {
-                        Type::Bool => ValueType::Bool(bool_lit),
-                        _ => todo!()
-                    }
-                }
-
-                token::LiteralTypes::Char(char_lit) => {
-                    match s_type {
-                        Type::Char => ValueType::Char(char_lit),
-                        _ => todo!()
-                    }
-                }
-                _ => todo!()
-            };
-
-            Ok(v_type)
-        }
-        _ => Err("todo".to_string())
-    }
-}
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct Value {
-    // Value type
-    pub v_type: Type,
+    pub val_type: Type,
     pub literal: ValueType,
 }
 
 impl Value {
     pub fn new(literal: ValueType) -> Self {
-        let v_type = match literal {
+        let val_type = match literal {
             ValueType::Int8(_) => Type::Int8,
             ValueType::Int16(_) => Type::Int16,
             ValueType::Int32(_) => Type::Int32,
@@ -183,18 +88,38 @@ impl Value {
             ValueType::String(_) => Type::String,
             ValueType::Bool(_) => Type::Bool,
             ValueType::Char(_) => Type::Char,
+            _ => Type::IntN,
         };
-        Value { v_type, literal }
+        Value { val_type, literal }
     }
+}
+
+#[derive(Debug, Clone)]
+pub enum SymbolKind {
+    Variable {
+        var_type: Type,
+        value: Option<Value>,
+        mutable: bool,
+    },
+
+    TypeAlias {
+        target_type: Type,
+    },
+
+    StructDecl {
+        fields: HashMap<String, Type>,
+    },
+
+    FuncDecl {
+        params: Vec<(String, Type)>,
+        return_type: Type,
+    },
 }
 
 #[derive(Debug, Clone)]
 pub struct Symbol {
     pub name: String,
-    // Symbol type
-    pub s_type: Type,
-    pub value: Option<Value>,
-    pub mutable: bool,
+    pub kind: SymbolKind,
 }
 
 #[derive(Debug, Clone)]
@@ -206,6 +131,7 @@ pub enum SymbolTableError {
         expected: Type,
         found: Type,
     },
+    NotAVariable(String),
     UndefinedVariable(String),
     MissingTypeOrInitializer(String),
     CannotExitGlobalScope,
@@ -226,8 +152,13 @@ impl std::fmt::Display for SymbolTableError {
                 "Type mismatch for '{}': expected {:?}, got {:?}",
                 name, expected, found
             ),
+            NotAVariable(n) => write!(f, "This is not a variable '{}'", n),
             UndefinedVariable(n) => write!(f, "Undefined variable '{}'", n),
-            MissingTypeOrInitializer(n) => write!(f, "Variable '{}' must be initialized or have an explicit type", n),
+            MissingTypeOrInitializer(n) => write!(
+                f,
+                "Variable '{}' must be initialized or have an explicit type",
+                n
+            ),
             CannotExitGlobalScope => write!(f, "Cannot exit global scope"),
         }
     }
@@ -289,16 +220,16 @@ impl SymbolTable {
         }
 
         let value = init.map(Value::new);
-        let s_type = match (decl_type, &value) {
-            (Some(t), Some(v)) if t != v.v_type => {
+        let var_type = match (decl_type, &value) {
+            (Some(t), Some(v)) if t != v.val_type => {
                 return Err(SymbolTableError::TypeMismatch {
                     name: name.to_string(),
                     expected: t,
-                    found: v.v_type.clone(),
+                    found: v.val_type.clone(),
                 });
             }
             (Some(t), _) => t,
-            (None, Some(v)) => v.v_type.clone(),
+            (None, Some(v)) => v.val_type.clone(),
             (None, None) => {
                 return Err(SymbolTableError::MissingTypeOrInitializer(name.to_string()));
             }
@@ -306,9 +237,11 @@ impl SymbolTable {
 
         let symbol = Symbol {
             name: name.to_string(),
-            s_type,
-            value,
-            mutable,
+            kind: SymbolKind::Variable {
+                var_type,
+                value,
+                mutable,
+            },
         };
 
         self.current_scope().insert(name.to_string(), symbol);
@@ -336,18 +269,27 @@ impl SymbolTable {
     pub fn assign(&mut self, name: &str, new_value: Value) -> Result<(), SymbolTableError> {
         for scope in self.scopes.iter_mut().rev() {
             if let Some(symbol) = scope.get_mut(name) {
-                if !symbol.mutable {
-                    return Err(SymbolTableError::ImmutableAssignment(name.to_string()));
+                match &mut symbol.kind {
+                    SymbolKind::Variable {
+                        var_type,
+                        value,
+                        mutable,
+                    } => {
+                        if !*mutable {
+                            return Err(SymbolTableError::ImmutableAssignment(name.to_string()));
+                        }
+                        if *var_type != new_value.val_type {
+                            return Err(SymbolTableError::TypeMismatch {
+                                name: name.to_string(),
+                                expected: var_type.clone(),
+                                found: new_value.val_type,
+                            });
+                        }
+                        *value = Some(new_value);
+                        return Ok(());
+                    }
+                    _ => return Err(SymbolTableError::NotAVariable(name.to_string())),
                 }
-                if symbol.s_type != new_value.v_type {
-                    return Err(SymbolTableError::TypeMismatch {
-                        name: name.to_string(),
-                        expected: symbol.s_type.clone(),
-                        found: new_value.v_type,
-                    });
-                }
-                symbol.value = Some(new_value);
-                return Ok(());
             }
         }
         Err(SymbolTableError::UndefinedVariable(name.to_string()))

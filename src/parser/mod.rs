@@ -336,7 +336,7 @@ impl Parser {
                 is_public,
                 name: t_name.lexeme,
                 r#type: t_type,
-                value: value,
+                value,
             },
             s_pos,
         ))

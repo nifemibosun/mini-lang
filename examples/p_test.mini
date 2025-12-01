@@ -3,3 +3,13 @@
 const TEST: int32 = 127;
 
 type Str = string;
+type Uint = uint32;
+
+struct User {
+    name: Str,
+    age: Uint,
+}
+
+func test(user: User) {
+    println("Hello {user.name}");
+}
