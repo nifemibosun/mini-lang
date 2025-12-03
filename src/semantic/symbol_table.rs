@@ -96,6 +96,10 @@ impl Value {
 
 #[derive(Debug, Clone)]
 pub enum SymbolKind {
+    Return {
+        return_type: Type,
+    },
+
     Variable {
         var_type: Type,
         value: Option<Value>,

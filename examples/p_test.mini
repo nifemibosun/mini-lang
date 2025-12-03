@@ -11,5 +11,16 @@ struct User {
 }
 
 func test(user: User) {
-    println("Hello {user.name}");
+    let mut x: int32 = 10;
 }
+
+construct User {
+    func new(name: Str, age: Uint): User {
+        return name;
+    } 
+}
+
+//enum Test {
+//    User(User),
+//    Admin(User),
+//}
