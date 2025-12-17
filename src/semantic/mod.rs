@@ -24,87 +24,153 @@ impl<'a> SemanticAnalyzer<'a> {
 
     pub fn analyze_program(&mut self) -> symbol_table::SymbolTable {
         for decl in self.ast.clone() {
-            self.analyze_decl(decl.value);
+            self.analyze_decl(decl.value).unwrap();
         }
 
         self.symbols.clone()
     }
 
-    fn analyze_expr(&mut self, expr: ast::Expr) {
+    fn analyze_expr(&mut self, expr: ast::Expr) -> Result<symbol_table::Type, String> {
         match expr.value {
             ast::ExprKind::Literal(lit) => {
-                todo!()
+                match lit {
+                    token::LiteralTypes::Int(_) => Ok(symbol_table::Type::Int32),
+                    token::LiteralTypes::Float(_) => Ok(symbol_table::Type::Float64),
+                    token::LiteralTypes::String(_) => Ok(symbol_table::Type::String),
+                    token::LiteralTypes::Bool(_) => Ok(symbol_table::Type::Bool),
+                    token::LiteralTypes::Char(_) => Ok(symbol_table::Type::Char),
+                    _ => Err("Unknown luteral type".to_string())
+                }
             }
-            ast::ExprKind::Unary { op, right } => {
-                todo!()
+            ast::ExprKind::Identifier(name) => {
+                if let Some(symbol) = self.symbols.resolve(&name) {
+                    match &symbol.kind {
+                        symbol_table::SymbolKind::Variable { var_type, .. } => Ok(var_type.clone()),
+                        _ => Err(format!("'{}' is not a variable", &name)),
+                    }
+                } else {
+                    Err(format!("Undefined variable: {}", &name))
+                }
             }
-            ast::ExprKind::Binary { left, op, right } => {
-                todo!()
-            }
-            ast::ExprKind::Grouping(group) => {
-                todo!()
-            }
-            ast::ExprKind::Call { callee, arguments } => {
-                todo!()
-            }
-            _ => todo!()
+            ast::ExprKind::Unary { op, right } => Ok(self.analyze_unary_expr(op, right)?),
+            // ast::ExprKind::Binary { left, op, right } => Ok(()),
+            ast::ExprKind::Grouping(inner) => Ok(self.analyze_expr(*inner)?),
+            // ast::ExprKind::Call { callee, arguments } => Ok(()),
+            _ => Err(format!("Unknown expression kind: {:#?}", expr.value)),
         }
     }
 
-    fn analyze_stmt(&mut self, stmt: ast::Stmt) {
+    fn analyze_unary_expr(&mut self, op: token::TokenType, right: Box<ast::Expr>) -> Result<symbol_table::Type, String> {
+        let right_type = self.analyze_expr(*right)?;
+
+        match op {
+            token::TokenType::Minus => {
+                match right_type {
+                    symbol_table::Type::Int8    |
+                    symbol_table::Type::Int16   |
+                    symbol_table::Type::Int32   |
+                    symbol_table::Type::Int64   |
+                    symbol_table::Type::Int128  |
+                    symbol_table::Type::IntN    |
+                    symbol_table::Type::UInt8   |
+                    symbol_table::Type::UInt16  |
+                    symbol_table::Type::UInt32  |
+                    symbol_table::Type::UInt64  |
+                    symbol_table::Type::UInt128 |
+                    symbol_table::Type::UIntN   |
+                    symbol_table::Type::Float32 |
+                    symbol_table::Type::Float64 => Ok(right_type),
+                    _ => Err(format!("Cannot use '-' on type {:#?}", right_type))
+                }
+            }
+            token::TokenType::Bang => {
+                if right_type == symbol_table::Type::Bool {
+                    Ok(symbol_table::Type::Bool)
+                } else {
+                    Err(format!("Cannot use '!' on type {:#?}", right_type))
+                }
+            }
+            _ => Err(format!("Unknown unary operator {:#?}", op))
+        }
+        
+    }
+
+    fn analyze_binary_expr(&mut self) {}
+
+    fn analyze_stmt(&mut self, stmt: ast::Stmt) -> Result<(), String> {
         match stmt.value {
-            ast::StmtKind::ExprStmt(expr_stmt) => {
-                todo!()
+            ast::StmtKind::ExprStmt(expr) => {
+                self.analyze_expr(expr).unwrap();
+                Ok(())
             }
-            ast::StmtKind::Let { name, mutable, r#type, initializer} => {
-                self.analyze_let_stmt(name, r#type.unwrap(), mutable, initializer.unwrap())
-            },
-            ast::StmtKind::Assign { target, operator, value } => {
-                todo!()
+            ast::StmtKind::Let {
+                name,
+                mutable,
+                r#type,
+                initializer,
+            } => Ok(self.analyze_let_stmt(name, r#type.unwrap(), mutable, initializer.unwrap())),
+            ast::StmtKind::Assign {
+                target,
+                operator,
+                value,
+            } => Ok(()),
+            ast::StmtKind::Return(ret_expr) => Ok(self.analyze_return_stmt(ret_expr)),
+            ast::StmtKind::Block(body) => {
+                self.analyze_block_stmt(body);
+                Ok(())
             }
-            ast::StmtKind::Return(ret_expr) => self.analyze_return_stmt(ret_expr),
-            ast::StmtKind::Block(body) => self.analyze_block_stmt(body),
-            ast::StmtKind::If { condition, then_branch, else_branch } => {
-                todo!()
-            }
-            ast::StmtKind::While { condition, body } => {
-                todo!()
-            }
-            ast::StmtKind::For { iterator, iterable, body } => {
-                todo!()
-            }
-            ast::StmtKind::Match { expr, arms } => {
-                todo!()
-            }
-            _ => todo!("Unknown statement kind"),
+            ast::StmtKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => Ok(()),
+            ast::StmtKind::While { condition, body } => Ok(()),
+            ast::StmtKind::For {
+                iterator,
+                iterable,
+                body,
+            } => Ok(()),
+            ast::StmtKind::Match { expr, arms } => Ok(()),
+            _ => Err(format!("Unknown statement kind: {:?}", stmt.value)),
         }
     }
 
     #[inline]
-    fn analyze_let_stmt(&mut self, name: String, ty: ast::TypeExpr, mutable: bool, value: ast::Node<ast::ExprKind>) {
+    fn analyze_let_stmt(
+        &mut self,
+        name: String,
+        ty: ast::TypeExpr,
+        mutable: bool,
+        value: ast::Node<ast::ExprKind>,
+    ) {
         self.analyze_var(name, ty, mutable, value);
     }
 
     fn analyze_return_stmt(&mut self, ret_expr: Option<ast::Expr>) {
-        let expected_type = self.curr_ret_type.clone()
+        let expected_type = self
+            .curr_ret_type
+            .clone()
             .expect("Return statement found outside of a function!");
 
         if let Some(expr) = ret_expr {
             if let Err(e) = self.convert_expr_to_val_type(expr, expected_type.clone()) {
-                 println!("Semantic Error in Return: {}", e);
+                println!("Semantic error in return: {}", e);
             }
         } else {
             if expected_type != symbol_table::Type::Unit {
-                println!("Semantic Error: Expected return value of type {:?}, found Unit", expected_type);
+                println!(
+                    "Semantic Error: Expected return value of type {:?}, found Unit",
+                    expected_type
+                );
             }
         }
     }
 
     fn analyze_block_stmt(&mut self, body: Vec<ast::Stmt>) {
         self.symbols.enter_scope();
-        
+
         for stmt in body {
-            self.analyze_stmt(stmt);
+            self.analyze_stmt(stmt).unwrap();
         }
 
         if let Err(e) = self.symbols.exit_scope() {
@@ -112,7 +178,13 @@ impl<'a> SemanticAnalyzer<'a> {
         }
     }
 
-    fn analyze_var(&mut self, name: String, ty: ast::TypeExpr, mutable: bool, value: ast::Node<ast::ExprKind>,) {
+    fn analyze_var(
+        &mut self,
+        name: String,
+        ty: ast::TypeExpr,
+        mutable: bool,
+        value: ast::Node<ast::ExprKind>,
+    ) {
         let var_type = self.convert_type_expr_to_type(ty).unwrap();
         let val_type = self
             .convert_expr_to_val_type(value, var_type.clone())
@@ -132,30 +204,37 @@ impl<'a> SemanticAnalyzer<'a> {
         }
     }
 
-    fn analyze_decl(&mut self, decl: ast::Decl) {
+    fn analyze_decl(&mut self, decl: ast::Decl) -> Result<(), String> {
         match decl {
-            ast::Decl::Import { path } => {
-                todo!()
-            }
+            ast::Decl::Import { path } => Ok(()),
             ast::Decl::Const {
                 name,
                 r#type,
                 value,
                 ..
-            } => self.analyze_const_decl(name, r#type, value),
-            ast::Decl::Type { name, r#type, .. } => self.analyze_type_decl(name, r#type),
-            ast::Decl::Func(func_decl) => self.analyze_func_decl(func_decl),
-            ast::Decl::Struct { name, fields, .. } => self.analyze_struct_decl(name, fields),
-            ast::Decl::Enum { is_public, name, variants } => {
-                todo!()
+            } => Ok(self.analyze_const_decl(name, r#type, value)),
+            ast::Decl::Type { name, r#type, .. } => Ok(self.analyze_type_decl(name, r#type)),
+            ast::Decl::Func(func_decl) => Ok(self.analyze_func_decl(func_decl)),
+            ast::Decl::Struct { name, fields, .. } => Ok(self.analyze_struct_decl(name, fields)),
+            ast::Decl::Enum {
+                is_public,
+                name,
+                variants,
+            } => Ok(()),
+            ast::Decl::Construct { name, methods } => {
+                Ok(self.analyze_construct_decl(name, methods))
             }
-            ast::Decl::Construct { name, methods } => self.analyze_construct_decl(name, methods),
-            _ => todo!(),
+            _ => Err(format!("Unknown declaration kind: {:#?}", decl)),
         }
     }
 
     #[inline]
-    fn analyze_const_decl(&mut self, name: String, ty: ast::TypeExpr, value: ast::Node<ast::ExprKind>) {
+    fn analyze_const_decl(
+        &mut self,
+        name: String,
+        ty: ast::TypeExpr,
+        value: ast::Node<ast::ExprKind>,
+    ) {
         self.analyze_var(name, ty, false, value);
     }
 
@@ -213,18 +292,18 @@ impl<'a> SemanticAnalyzer<'a> {
                 name: p_name.clone(),
                 kind: symbol_table::SymbolKind::Variable {
                     var_type: p_type,
-                    value: None, 
+                    value: None,
                     mutable: false,
-                }
+                },
             };
 
             if let Err(e) = self.symbols.define(&p_name, param_symbol) {
-                 println!("Semantic Error: {}", e);
+                println!("Semantic Error: {}", e);
             }
         }
 
         for stmt in func_decl.body {
-            self.analyze_stmt(stmt);
+            self.analyze_stmt(stmt).unwrap();
         }
 
         if let Err(e) = self.symbols.exit_scope() {
@@ -264,7 +343,7 @@ impl<'a> SemanticAnalyzer<'a> {
     }
 
     fn convert_type_expr_to_type(
-        &self,
+        &mut self,
         type_expr: ast::TypeExpr,
     ) -> Result<symbol_table::Type, String> {
         match type_expr {
@@ -318,7 +397,7 @@ impl<'a> SemanticAnalyzer<'a> {
     }
 
     fn convert_expr_to_val_type(
-        &self,
+        &mut self,
         expr: ast::Expr,
         s_type: symbol_table::Type,
     ) -> Result<symbol_table::ValueType, String> {
@@ -363,13 +442,13 @@ impl<'a> SemanticAnalyzer<'a> {
                         }
                         _ => todo!(),
                     },
-                    token::LiteralTypes::Float(f_lit) => {
-                        match s_type {
-                            // symbol_table::Type::Float32 => symbol_table::ValueType::Float32(f_lit.try_into().unwrap()),
-                            symbol_table::Type::Float64 => symbol_table::ValueType::Float64(f_lit),
-                            _ => todo!("Handle edge case"),
+                    token::LiteralTypes::Float(f_lit) => match s_type {
+                        symbol_table::Type::Float32 => {
+                            symbol_table::ValueType::Float32(f_lit as f32)
                         }
-                    }
+                        symbol_table::Type::Float64 => symbol_table::ValueType::Float64(f_lit),
+                        _ => todo!("Handle edge case"),
+                    },
 
                     token::LiteralTypes::String(s_lit) => match s_type {
                         symbol_table::Type::String => symbol_table::ValueType::String(s_lit),
