@@ -63,6 +63,8 @@ pub enum TokenType {
     BangEqual,
     ///"=="
     EqualEqual,
+    ///"%"
+    Mod,
     ///"<"
     Less,
     ///">"

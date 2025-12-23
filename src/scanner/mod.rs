@@ -39,7 +39,7 @@ impl<'a> Scanner<'a> {
     pub fn scan_tokens(&mut self) -> (Vec<token::Token>, bool) {
         while !self.is_at_end() {
             self.start = self.current;
-            self.start_pos = self.pos.clone();
+            self.start_pos = self.pos;
             self.scan_token();
         }
 
@@ -47,7 +47,7 @@ impl<'a> Scanner<'a> {
             token::TokenType::EoF,
             "".to_string(),
             None,
-            self.pos.clone(),
+            self.pos,
         ));
         (std::mem::take(&mut self.tokens), self.state.had_error)
     }
@@ -69,6 +69,7 @@ impl<'a> Scanner<'a> {
             '@' => self.add_token(token::TokenType::At),
             '#' => self.add_token(token::TokenType::Pound),
             '$' => self.add_token(token::TokenType::Dollar),
+            '%' => self.add_token(token::TokenType::Mod),
             '"' => self.string(),
             ':' => {
                 if self.match_token(':') {
@@ -213,7 +214,7 @@ impl<'a> Scanner<'a> {
         let text = &self.source[self.start..self.current];
 
         match self.keywords(text) {
-            Some(token_type) => self.add_token(token_type.clone()),
+            Some(token_type) => self.add_token(token_type),
             None => self.add_token(token::TokenType::Identifier),
         }
     }
@@ -307,7 +308,7 @@ impl<'a> Scanner<'a> {
 
     fn add_token_(&mut self, token_type: token::TokenType, literal: Option<token::LiteralTypes>) {
         let lexeme = &self.source[self.start..self.current];
-        let pos = self.start_pos.clone();
+        let pos = self.start_pos;
         self.tokens.push(token::Token::new(
             token_type,
             lexeme.to_string(),

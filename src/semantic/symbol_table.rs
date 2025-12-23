@@ -32,6 +32,16 @@ pub enum Type {
     Unit,
 }
 
+impl Type {
+    pub fn is_numeric(&self) -> bool {
+        matches!(self, 
+            Type::Int8 | Type::Int16 | Type::Int32 | Type::Int64 | Type::Int128 | Type::IntN | 
+            Type::UInt8 | Type::UInt16 | Type::UInt32 | Type::UInt64 | Type::UInt128 | Type::UIntN | 
+            Type::Float32 | Type::Float64
+        )
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum ValueType {
     // Signed Integer value types
@@ -153,7 +163,7 @@ impl std::fmt::Display for SymbolTableError {
                 found,
             } => write!(
                 f,
-                "Type mismatch for '{}': expected {:?}, got {:?}",
+                "Type mismatch for '{}': expected {:?}, found {:?}",
                 name, expected, found
             ),
             NotAVariable(n) => write!(f, "This is not a variable '{}'", n),

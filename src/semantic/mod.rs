@@ -32,16 +32,14 @@ impl<'a> SemanticAnalyzer<'a> {
 
     fn analyze_expr(&mut self, expr: ast::Expr) -> Result<symbol_table::Type, String> {
         match expr.value {
-            ast::ExprKind::Literal(lit) => {
-                match lit {
-                    token::LiteralTypes::Int(_) => Ok(symbol_table::Type::Int32),
-                    token::LiteralTypes::Float(_) => Ok(symbol_table::Type::Float64),
-                    token::LiteralTypes::String(_) => Ok(symbol_table::Type::String),
-                    token::LiteralTypes::Bool(_) => Ok(symbol_table::Type::Bool),
-                    token::LiteralTypes::Char(_) => Ok(symbol_table::Type::Char),
-                    _ => Err("Unknown luteral type".to_string())
-                }
-            }
+            ast::ExprKind::Literal(lit) => match lit {
+                token::LiteralTypes::Int(_) => Ok(symbol_table::Type::Int32),
+                token::LiteralTypes::Float(_) => Ok(symbol_table::Type::Float64),
+                token::LiteralTypes::String(_) => Ok(symbol_table::Type::String),
+                token::LiteralTypes::Bool(_) => Ok(symbol_table::Type::Bool),
+                token::LiteralTypes::Char(_) => Ok(symbol_table::Type::Char),
+                _ => Err("Unknown luteral type".to_string()),
+            },
             ast::ExprKind::Identifier(name) => {
                 if let Some(symbol) = self.symbols.resolve(&name) {
                     match &symbol.kind {
@@ -52,37 +50,41 @@ impl<'a> SemanticAnalyzer<'a> {
                     Err(format!("Undefined variable: {}", &name))
                 }
             }
-            ast::ExprKind::Unary { op, right } => Ok(self.analyze_unary_expr(op, right)?),
-            // ast::ExprKind::Binary { left, op, right } => Ok(()),
+            ast::ExprKind::Unary { op, right } => Ok(self.analyze_unary_expr(op, *right)?),
+            ast::ExprKind::Binary { left, op, right } => Ok(self.analyze_binary_expr(*left, op, *right)?),
             ast::ExprKind::Grouping(inner) => Ok(self.analyze_expr(*inner)?),
-            // ast::ExprKind::Call { callee, arguments } => Ok(()),
+            ast::ExprKind::Call { callee, arguments } => {
+                Ok(self.analyze_call_expr(*callee, arguments)?)
+            }
             _ => Err(format!("Unknown expression kind: {:#?}", expr.value)),
         }
     }
 
-    fn analyze_unary_expr(&mut self, op: token::TokenType, right: Box<ast::Expr>) -> Result<symbol_table::Type, String> {
-        let right_type = self.analyze_expr(*right)?;
+    fn analyze_unary_expr(
+        &mut self,
+        op: token::TokenType,
+        right: ast::Expr,
+    ) -> Result<symbol_table::Type, String> {
+        let right_type = self.analyze_expr(right)?;
 
         match op {
-            token::TokenType::Minus => {
-                match right_type {
-                    symbol_table::Type::Int8    |
-                    symbol_table::Type::Int16   |
-                    symbol_table::Type::Int32   |
-                    symbol_table::Type::Int64   |
-                    symbol_table::Type::Int128  |
-                    symbol_table::Type::IntN    |
-                    symbol_table::Type::UInt8   |
-                    symbol_table::Type::UInt16  |
-                    symbol_table::Type::UInt32  |
-                    symbol_table::Type::UInt64  |
-                    symbol_table::Type::UInt128 |
-                    symbol_table::Type::UIntN   |
-                    symbol_table::Type::Float32 |
-                    symbol_table::Type::Float64 => Ok(right_type),
-                    _ => Err(format!("Cannot use '-' on type {:#?}", right_type))
-                }
-            }
+            token::TokenType::Minus => match right_type {
+                symbol_table::Type::Int8
+                | symbol_table::Type::Int16
+                | symbol_table::Type::Int32
+                | symbol_table::Type::Int64
+                | symbol_table::Type::Int128
+                | symbol_table::Type::IntN
+                | symbol_table::Type::UInt8
+                | symbol_table::Type::UInt16
+                | symbol_table::Type::UInt32
+                | symbol_table::Type::UInt64
+                | symbol_table::Type::UInt128
+                | symbol_table::Type::UIntN
+                | symbol_table::Type::Float32
+                | symbol_table::Type::Float64 => Ok(right_type),
+                _ => Err(format!("Cannot use '-' on type {:#?}", right_type)),
+            },
             token::TokenType::Bang => {
                 if right_type == symbol_table::Type::Bool {
                     Ok(symbol_table::Type::Bool)
@@ -90,12 +92,91 @@ impl<'a> SemanticAnalyzer<'a> {
                     Err(format!("Cannot use '!' on type {:#?}", right_type))
                 }
             }
-            _ => Err(format!("Unknown unary operator {:#?}", op))
+            _ => Err(format!("Unknown unary operator {:#?}", op)),
         }
-        
     }
 
-    fn analyze_binary_expr(&mut self) {}
+    fn analyze_binary_expr(&mut self, left: ast::Expr, op: token::TokenType, right: ast::Expr) -> Result<symbol_table::Type, String> {
+        let left_type = self.analyze_expr(left)?;
+        let right_type = self.analyze_expr(right)?;
+
+        if left_type != right_type {
+            return Err(format!(
+                "Type mismatch in binary expression. Left side is {:?}, but Right side is {:?}.",
+                left_type, right_type
+            ));
+        }
+
+        match op {
+            token::TokenType::Plus 
+            | token::TokenType::Minus 
+            | token::TokenType::Star 
+            | token::TokenType::Slash 
+            | token::TokenType::Mod => {
+                if !left_type.is_numeric() && left_type != symbol_table::Type::String {
+                    return Err(format!("Cannot perform arithmetic on type {:?}", left_type));
+                }
+                Ok(left_type)
+            },
+
+            token::TokenType::Greater
+            | token::TokenType::GreaterEqual
+            | token::TokenType::Less
+            | token::TokenType::LessEqual
+            | token::TokenType::EqualEqual
+            | token::TokenType::BangEqual => {
+                Ok(symbol_table::Type::Bool)
+            },
+
+            token::TokenType::And | token::TokenType::Or => {
+                if left_type != symbol_table::Type::Bool {
+                    return Err(format!("Logical operators require Bool, found {:?}", left_type));
+                }
+                Ok(symbol_table::Type::Bool)
+            },
+
+            _ => Err(format!("Unknown or unsupported binary operator: {:?}", op)),
+        }
+    }
+
+    fn analyze_call_expr(&mut self, callee: ast::Expr, arguments: Vec<ast::Expr>) -> Result<symbol_table::Type, String> {
+        let func_name = match callee.value {
+            ast::ExprKind::Identifier(name) => name,
+            _ => return Err("Call must be an identifier".to_string()), 
+        };
+
+        let (params, return_type) = if let Some(symbol) = self.symbols.resolve(&func_name) {
+            match &symbol.kind {
+                symbol_table::SymbolKind::FuncDecl { params, return_type } => {
+                    (params.clone(), return_type.clone())
+                },
+                _ => return Err(format!("'{}' is defined but is not a function", func_name)),
+            }
+        } else {
+            return Err(format!("Undefined function: '{}'", func_name));
+        };
+
+        if arguments.len() != params.len() {
+            return Err(format!(
+                "Function '{}' expects {} arguments, but got {}.", 
+                func_name, params.len(), arguments.len()
+            ));
+        }
+
+        for (i, arg_expr) in arguments.into_iter().enumerate() {
+            let arg_type = self.analyze_expr(arg_expr)?;
+            let expected_type = &params[i].1;
+
+            if &arg_type != expected_type {
+                return Err(format!(
+                    "Type mismatch at argument {}. Function '{}' expects {:?}, but got {:?}",
+                    i + 1, func_name, expected_type, arg_type
+                ));
+            }
+        }
+
+        Ok(return_type)
+    }
 
     fn analyze_stmt(&mut self, stmt: ast::Stmt) -> Result<(), String> {
         match stmt.value {
@@ -186,15 +267,39 @@ impl<'a> SemanticAnalyzer<'a> {
         value: ast::Node<ast::ExprKind>,
     ) {
         let var_type = self.convert_type_expr_to_type(ty).unwrap();
-        let val_type = self
-            .convert_expr_to_val_type(value, var_type.clone())
-            .unwrap();
+        let rhs_expr = ast::Expr { value: value.value.clone(), pos:  value.pos };
+
+        let rhs_type = match self.analyze_expr(rhs_expr.clone()) {
+            Ok(t) => t,
+            Err(e) => {
+                println!("Semantic Error: {}", e);
+                return;
+            }
+        };
+
+        if var_type != rhs_type {
+            symbol_table::SymbolTableError::TypeMismatch { name, expected: var_type, found: rhs_type };
+            return;
+        }
+
+        let symbol_value = match &rhs_expr.value {
+            ast::ExprKind::Literal(_) => {
+                match self.convert_expr_to_val_type(rhs_expr, var_type.clone()) {
+                    Ok(val) => Some(symbol_table::Value::new(val)),
+                    Err(e) => {
+                        println!("Semantic Error converting value: {}", e);
+                        None
+                    }
+                }
+            },
+            _ => None,
+        };
 
         let symbol = symbol_table::Symbol {
             name: name.clone(),
             kind: symbol_table::SymbolKind::Variable {
                 var_type: var_type.clone(),
-                value: Some(symbol_table::Value::new(val_type)),
+                value: symbol_value,
                 mutable,
             },
         };
@@ -238,20 +343,20 @@ impl<'a> SemanticAnalyzer<'a> {
         self.analyze_var(name, ty, false, value);
     }
 
-    fn analyze_type_decl(&mut self, name: String, ty: ast::TypeExpr) {
-        let target_type = self
-            .convert_type_expr_to_type(ty)
-            .expect("Invalid type in type alias");
+        fn analyze_type_decl(&mut self, name: String, ty: ast::TypeExpr) {
+            let target_type = self
+                .convert_type_expr_to_type(ty)
+                .expect("Invalid type in type alias");
 
-        let symbol = symbol_table::Symbol {
-            name: name.clone(),
-            kind: symbol_table::SymbolKind::TypeAlias { target_type },
-        };
+            let symbol = symbol_table::Symbol {
+                name: name.clone(),
+                kind: symbol_table::SymbolKind::TypeAlias { target_type },
+            };
 
-        if let Err(e) = self.symbols.define(&name, symbol) {
-            println!("Semantic Error: {}", e);
+            if let Err(e) = self.symbols.define(&name, symbol) {
+                println!("Semantic Error: {}", e);
+            }
         }
-    }
 
     fn analyze_func_decl(&mut self, func_decl: ast::FuncDecl) {
         let name = func_decl.name;

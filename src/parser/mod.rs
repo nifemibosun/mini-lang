@@ -224,7 +224,7 @@ impl Parser {
 
     fn assign_or_expr_stmt(&mut self) -> Result<ast::Stmt, String> {
         let expr = self.expression()?;
-        let s_pos = expr.pos.clone();
+        let s_pos = expr.pos;
 
         if self.match_token(&[
             TokenType::Equal,
@@ -543,7 +543,7 @@ impl Parser {
         if self.match_token(&[TokenType::Minus, TokenType::Bang]) {
             let op = self.previous().token_type;
             let right = self.parse_prefix()?;
-            let pos = right.pos.clone();
+            let pos = right.pos;
 
             return Ok(ast::Node::new(
                 ast::ExprKind::Unary {
