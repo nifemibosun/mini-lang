@@ -194,7 +194,7 @@ impl<'a> SemanticAnalyzer<'a> {
                 target,
                 operator,
                 value,
-            } => Ok(()),
+            } => Ok(self.analyze_assign_stmt(target, value)?),
             ast::StmtKind::Return(ret_expr) => Ok(self.analyze_return_stmt(ret_expr)),
             ast::StmtKind::Block(body) => {
                 self.analyze_block_stmt(body);
@@ -227,6 +227,36 @@ impl<'a> SemanticAnalyzer<'a> {
         self.analyze_var(name, ty, mutable, value);
     }
 
+    fn analyze_assign_stmt(&mut self, target: ast::Expr, value: ast::Expr) -> Result<(), String> {
+        let name = match target.value {
+            ast::ExprKind::Identifier(n) => n,
+            _ => return Err("Assignment target must be an identifier".to_string()),
+        };
+
+        let (mut_allowed, target_type) = if let Some(symbol) = self.symbols.resolve(&name) {
+            match &symbol.kind {
+                symbol_table::SymbolKind::Variable { mutable, var_type, .. } => (*mutable, var_type.clone()),
+                _ => return Err(format!("'{}' is not a variable and cannot be assigned to", name)),
+            }
+        } else {
+            return Err(format!("Undefined variable '{}'", name));
+        };
+
+        if !mut_allowed {
+            return Err(format!("Cannot assign to immutable variable '{}'", name));
+        }
+
+        let val_type = self.analyze_expr(value)?;
+        if target_type != val_type {
+            return Err(format!(
+                "Type mismatch in assignment. Variable '{}' expects {:?}, but got {:?}",
+                name, target_type, val_type
+            ));
+        }
+
+        Ok(())
+    }
+
     fn analyze_return_stmt(&mut self, ret_expr: Option<ast::Expr>) {
         let expected_type = self
             .curr_ret_type
@@ -257,6 +287,38 @@ impl<'a> SemanticAnalyzer<'a> {
         if let Err(e) = self.symbols.exit_scope() {
             println!("Semantic Error: {}", e);
         }
+    }
+
+    fn analyze_if_stmt(
+        &mut self, 
+        condition: ast::Expr, 
+        then_branch: ast::Stmt, 
+        else_branch: Option<Box<ast::Stmt>>
+    ) -> Result<(), String> {
+        let cond_type = self.analyze_expr(condition)?;
+
+        if cond_type != symbol_table::Type::Bool {
+            return Err(format!("If condition must be a Bool, found {:?}", cond_type));
+        }
+
+        self.analyze_stmt(then_branch)?;
+
+        if let Some(else_stmt) = else_branch {
+            self.analyze_stmt(*else_stmt)?;
+        }
+
+        Ok(())
+    }
+
+    fn analyze_while_stmt(&mut self, condition: ast::Expr, body: ast::Stmt) -> Result<(), String> {
+        let cond_type = self.analyze_expr(condition)?;
+
+        if cond_type != symbol_table::Type::Bool {
+            return Err(format!("While condition must be a Bool, found {:?}", cond_type));
+        }
+
+        self.analyze_stmt(body)?;
+        Ok(())
     }
 
     fn analyze_var(
