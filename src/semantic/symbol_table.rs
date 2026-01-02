@@ -34,10 +34,22 @@ pub enum Type {
 
 impl Type {
     pub fn is_numeric(&self) -> bool {
-        matches!(self, 
-            Type::Int8 | Type::Int16 | Type::Int32 | Type::Int64 | Type::Int128 | Type::IntN | 
-            Type::UInt8 | Type::UInt16 | Type::UInt32 | Type::UInt64 | Type::UInt128 | Type::UIntN | 
-            Type::Float32 | Type::Float64
+        matches!(
+            self,
+            Type::Int8
+                | Type::Int16
+                | Type::Int32
+                | Type::Int64
+                | Type::Int128
+                | Type::IntN
+                | Type::UInt8
+                | Type::UInt16
+                | Type::UInt32
+                | Type::UInt64
+                | Type::UInt128
+                | Type::UIntN
+                | Type::Float32
+                | Type::Float64
         )
     }
 }
@@ -178,7 +190,7 @@ impl std::fmt::Display for SymbolTableError {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct SymbolTable {
     scopes: Vec<HashMap<String, Symbol>>,
 }

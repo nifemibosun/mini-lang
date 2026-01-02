@@ -91,6 +91,12 @@ pub enum StmtKind {
         r#type: Option<TypeExpr>,
         initializer: Option<Expr>,
     },
+    ConstStmt {
+        is_public: bool,
+        name: String,
+        r#type: TypeExpr,
+        value: Expr,
+    },
     Assign {
         target: Expr,
         operator: TokenType,
@@ -133,7 +139,7 @@ pub enum Decl {
     Import {
         path: Vec<String>,
     },
-    Const {
+    ConstDecl {
         is_public: bool,
         name: String,
         r#type: TypeExpr,

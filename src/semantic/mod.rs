@@ -27,7 +27,7 @@ impl<'a> SemanticAnalyzer<'a> {
             self.analyze_decl(decl.value).unwrap();
         }
 
-        self.symbols.clone()
+        std::mem::take(&mut self.symbols)
     }
 
     fn analyze_expr(&mut self, expr: ast::Expr) -> Result<symbol_table::Type, String> {
@@ -51,7 +51,9 @@ impl<'a> SemanticAnalyzer<'a> {
                 }
             }
             ast::ExprKind::Unary { op, right } => Ok(self.analyze_unary_expr(op, *right)?),
-            ast::ExprKind::Binary { left, op, right } => Ok(self.analyze_binary_expr(*left, op, *right)?),
+            ast::ExprKind::Binary { left, op, right } => {
+                Ok(self.analyze_binary_expr(*left, op, *right)?)
+            }
             ast::ExprKind::Grouping(inner) => Ok(self.analyze_expr(*inner)?),
             ast::ExprKind::Call { callee, arguments } => {
                 Ok(self.analyze_call_expr(*callee, arguments)?)
@@ -96,7 +98,12 @@ impl<'a> SemanticAnalyzer<'a> {
         }
     }
 
-    fn analyze_binary_expr(&mut self, left: ast::Expr, op: token::TokenType, right: ast::Expr) -> Result<symbol_table::Type, String> {
+    fn analyze_binary_expr(
+        &mut self,
+        left: ast::Expr,
+        op: token::TokenType,
+        right: ast::Expr,
+    ) -> Result<symbol_table::Type, String> {
         let left_type = self.analyze_expr(left)?;
         let right_type = self.analyze_expr(right)?;
 
@@ -108,48 +115,54 @@ impl<'a> SemanticAnalyzer<'a> {
         }
 
         match op {
-            token::TokenType::Plus 
-            | token::TokenType::Minus 
-            | token::TokenType::Star 
-            | token::TokenType::Slash 
+            token::TokenType::Plus
+            | token::TokenType::Minus
+            | token::TokenType::Star
+            | token::TokenType::Slash
             | token::TokenType::Mod => {
                 if !left_type.is_numeric() && left_type != symbol_table::Type::String {
                     return Err(format!("Cannot perform arithmetic on type {:?}", left_type));
                 }
                 Ok(left_type)
-            },
+            }
 
             token::TokenType::Greater
             | token::TokenType::GreaterEqual
             | token::TokenType::Less
             | token::TokenType::LessEqual
             | token::TokenType::EqualEqual
-            | token::TokenType::BangEqual => {
-                Ok(symbol_table::Type::Bool)
-            },
+            | token::TokenType::BangEqual => Ok(symbol_table::Type::Bool),
 
             token::TokenType::And | token::TokenType::Or => {
                 if left_type != symbol_table::Type::Bool {
-                    return Err(format!("Logical operators require Bool, found {:?}", left_type));
+                    return Err(format!(
+                        "Logical operators require Bool, found {:?}",
+                        left_type
+                    ));
                 }
                 Ok(symbol_table::Type::Bool)
-            },
+            }
 
             _ => Err(format!("Unknown or unsupported binary operator: {:?}", op)),
         }
     }
 
-    fn analyze_call_expr(&mut self, callee: ast::Expr, arguments: Vec<ast::Expr>) -> Result<symbol_table::Type, String> {
+    fn analyze_call_expr(
+        &mut self,
+        callee: ast::Expr,
+        arguments: Vec<ast::Expr>,
+    ) -> Result<symbol_table::Type, String> {
         let func_name = match callee.value {
             ast::ExprKind::Identifier(name) => name,
-            _ => return Err("Call must be an identifier".to_string()), 
+            _ => return Err("Call must be an identifier".to_string()),
         };
 
         let (params, return_type) = if let Some(symbol) = self.symbols.resolve(&func_name) {
             match &symbol.kind {
-                symbol_table::SymbolKind::FuncDecl { params, return_type } => {
-                    (params.clone(), return_type.clone())
-                },
+                symbol_table::SymbolKind::FuncDecl {
+                    params,
+                    return_type,
+                } => (params.clone(), return_type.clone()),
                 _ => return Err(format!("'{}' is defined but is not a function", func_name)),
             }
         } else {
@@ -158,8 +171,10 @@ impl<'a> SemanticAnalyzer<'a> {
 
         if arguments.len() != params.len() {
             return Err(format!(
-                "Function '{}' expects {} arguments, but got {}.", 
-                func_name, params.len(), arguments.len()
+                "Function '{}' expects {} arguments, but got {}.",
+                func_name,
+                params.len(),
+                arguments.len()
             ));
         }
 
@@ -170,7 +185,10 @@ impl<'a> SemanticAnalyzer<'a> {
             if &arg_type != expected_type {
                 return Err(format!(
                     "Type mismatch at argument {}. Function '{}' expects {:?}, but got {:?}",
-                    i + 1, func_name, expected_type, arg_type
+                    i + 1,
+                    func_name,
+                    expected_type,
+                    arg_type
                 ));
             }
         }
@@ -190,6 +208,12 @@ impl<'a> SemanticAnalyzer<'a> {
                 r#type,
                 initializer,
             } => Ok(self.analyze_let_stmt(name, r#type.unwrap(), mutable, initializer.unwrap())),
+            ast::StmtKind::ConstStmt {
+                name,
+                r#type,
+                value,
+                ..
+            } => Ok(self.analyze_const(name, r#type, value)),
             ast::StmtKind::Assign {
                 target,
                 operator,
@@ -235,8 +259,15 @@ impl<'a> SemanticAnalyzer<'a> {
 
         let (mut_allowed, target_type) = if let Some(symbol) = self.symbols.resolve(&name) {
             match &symbol.kind {
-                symbol_table::SymbolKind::Variable { mutable, var_type, .. } => (*mutable, var_type.clone()),
-                _ => return Err(format!("'{}' is not a variable and cannot be assigned to", name)),
+                symbol_table::SymbolKind::Variable {
+                    mutable, var_type, ..
+                } => (*mutable, var_type.clone()),
+                _ => {
+                    return Err(format!(
+                        "'{}' is not a variable and cannot be assigned to",
+                        name
+                    ));
+                }
             }
         } else {
             return Err(format!("Undefined variable '{}'", name));
@@ -290,15 +321,18 @@ impl<'a> SemanticAnalyzer<'a> {
     }
 
     fn analyze_if_stmt(
-        &mut self, 
-        condition: ast::Expr, 
-        then_branch: ast::Stmt, 
-        else_branch: Option<Box<ast::Stmt>>
+        &mut self,
+        condition: ast::Expr,
+        then_branch: ast::Stmt,
+        else_branch: Option<Box<ast::Stmt>>,
     ) -> Result<(), String> {
         let cond_type = self.analyze_expr(condition)?;
 
         if cond_type != symbol_table::Type::Bool {
-            return Err(format!("If condition must be a Bool, found {:?}", cond_type));
+            return Err(format!(
+                "If condition must be a boolean, found {:?}",
+                cond_type
+            ));
         }
 
         self.analyze_stmt(then_branch)?;
@@ -314,7 +348,10 @@ impl<'a> SemanticAnalyzer<'a> {
         let cond_type = self.analyze_expr(condition)?;
 
         if cond_type != symbol_table::Type::Bool {
-            return Err(format!("While condition must be a Bool, found {:?}", cond_type));
+            return Err(format!(
+                "While condition must be a boolean, found {:?}",
+                cond_type
+            ));
         }
 
         self.analyze_stmt(body)?;
@@ -329,7 +366,10 @@ impl<'a> SemanticAnalyzer<'a> {
         value: ast::Node<ast::ExprKind>,
     ) {
         let var_type = self.convert_type_expr_to_type(ty).unwrap();
-        let rhs_expr = ast::Expr { value: value.value.clone(), pos:  value.pos };
+        let rhs_expr = ast::Expr {
+            value: value.value.clone(),
+            pos: value.pos,
+        };
 
         let rhs_type = match self.analyze_expr(rhs_expr.clone()) {
             Ok(t) => t,
@@ -340,7 +380,11 @@ impl<'a> SemanticAnalyzer<'a> {
         };
 
         if var_type != rhs_type {
-            symbol_table::SymbolTableError::TypeMismatch { name, expected: var_type, found: rhs_type };
+            symbol_table::SymbolTableError::TypeMismatch {
+                name,
+                expected: var_type,
+                found: rhs_type,
+            };
             return;
         }
 
@@ -353,7 +397,7 @@ impl<'a> SemanticAnalyzer<'a> {
                         None
                     }
                 }
-            },
+            }
             _ => None,
         };
 
@@ -374,12 +418,12 @@ impl<'a> SemanticAnalyzer<'a> {
     fn analyze_decl(&mut self, decl: ast::Decl) -> Result<(), String> {
         match decl {
             ast::Decl::Import { path } => Ok(()),
-            ast::Decl::Const {
+            ast::Decl::ConstDecl {
                 name,
                 r#type,
                 value,
                 ..
-            } => Ok(self.analyze_const_decl(name, r#type, value)),
+            } => Ok(self.analyze_const(name, r#type, value)),
             ast::Decl::Type { name, r#type, .. } => Ok(self.analyze_type_decl(name, r#type)),
             ast::Decl::Func(func_decl) => Ok(self.analyze_func_decl(func_decl)),
             ast::Decl::Struct { name, fields, .. } => Ok(self.analyze_struct_decl(name, fields)),
@@ -396,29 +440,24 @@ impl<'a> SemanticAnalyzer<'a> {
     }
 
     #[inline]
-    fn analyze_const_decl(
-        &mut self,
-        name: String,
-        ty: ast::TypeExpr,
-        value: ast::Node<ast::ExprKind>,
-    ) {
+    fn analyze_const(&mut self, name: String, ty: ast::TypeExpr, value: ast::Node<ast::ExprKind>) {
         self.analyze_var(name, ty, false, value);
     }
 
-        fn analyze_type_decl(&mut self, name: String, ty: ast::TypeExpr) {
-            let target_type = self
-                .convert_type_expr_to_type(ty)
-                .expect("Invalid type in type alias");
+    fn analyze_type_decl(&mut self, name: String, ty: ast::TypeExpr) {
+        let target_type = self
+            .convert_type_expr_to_type(ty)
+            .expect("Invalid type in type alias");
 
-            let symbol = symbol_table::Symbol {
-                name: name.clone(),
-                kind: symbol_table::SymbolKind::TypeAlias { target_type },
-            };
+        let symbol = symbol_table::Symbol {
+            name: name.clone(),
+            kind: symbol_table::SymbolKind::TypeAlias { target_type },
+        };
 
-            if let Err(e) = self.symbols.define(&name, symbol) {
-                println!("Semantic Error: {}", e);
-            }
+        if let Err(e) = self.symbols.define(&name, symbol) {
+            println!("Semantic Error: {}", e);
         }
+    }
 
     fn analyze_func_decl(&mut self, func_decl: ast::FuncDecl) {
         let name = func_decl.name;

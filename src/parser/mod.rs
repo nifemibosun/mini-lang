@@ -40,7 +40,9 @@ impl Parser {
     }
 
     fn statement(&mut self) -> Result<ast::Stmt, String> {
-        if self.match_token(&[TokenType::Let]) {
+        if self.match_token(&[TokenType::Const]) {
+            return self.const_stmt();
+        } else if self.match_token(&[TokenType::Let]) {
             return self.let_stmt();
         } else if self.match_token(&[TokenType::Return]) {
             return self.return_stmt();
@@ -94,6 +96,30 @@ impl Parser {
                 mutable,
                 r#type,
                 initializer,
+            },
+            s_pos,
+        ))
+    }
+
+    fn const_stmt(&mut self) -> Result<ast::Stmt, String> {
+        let s_pos = self.previous().pos;
+        let t_name = self.consume(TokenType::Identifier, "Expected identifier after 'const'")?;
+
+        self.consume(TokenType::Colon, "Expected ':' after const name");
+
+        let t_type = self.parse_type()?;
+
+        self.consume(TokenType::Equal, "Expected '=' after token type");
+        let value = self.expression()?;
+
+        self.consume(TokenType::SemiColon, "Expected ';' after const declaration");
+
+        Ok(ast::Node::new(
+            ast::StmtKind::ConstStmt {
+                is_public: false,
+                name: t_name.lexeme,
+                r#type: t_type,
+                value,
             },
             s_pos,
         ))
@@ -332,7 +358,7 @@ impl Parser {
         self.consume(TokenType::SemiColon, "Expected ';' after const declaration");
 
         Ok(ast::Node::new(
-            ast::Decl::Const {
+            ast::Decl::ConstDecl {
                 is_public,
                 name: t_name.lexeme,
                 r#type: t_type,
