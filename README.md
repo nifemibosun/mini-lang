@@ -29,7 +29,7 @@ cd mini-lang
 ```bash
 cargo build --release
 ```
-This will compile the project and create an optimized executable in the target/release/ directory.
+This will compile the project and create an optimized executable in the target/release directory.
 
 
 ## Usage

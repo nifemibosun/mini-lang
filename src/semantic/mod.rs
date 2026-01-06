@@ -7,9 +7,15 @@ use crate::parser::ast;
 use crate::scanner::token;
 
 #[derive(Debug, Clone)]
+struct CurrFuncBlock {
+    current_func_name: String,
+    curr_ret_type: symbol_table::Type,
+}
+
+#[derive(Debug, Clone)]
 pub struct SemanticAnalyzer<'a> {
     ast: &'a ast::Program,
-    curr_ret_type: Option<symbol_table::Type>,
+    curr_func_block: Option<CurrFuncBlock>,
     pub symbols: symbol_table::SymbolTable,
 }
 
@@ -17,7 +23,7 @@ impl<'a> SemanticAnalyzer<'a> {
     pub fn new(ast: &'a ast::Program) -> Self {
         SemanticAnalyzer {
             ast,
-            curr_ret_type: None,
+            curr_func_block: None,
             symbols: symbol_table::SymbolTable::new(),
         }
     }
@@ -228,8 +234,10 @@ impl<'a> SemanticAnalyzer<'a> {
                 condition,
                 then_branch,
                 else_branch,
-            } => Ok(()),
-            ast::StmtKind::While { condition, body } => Ok(()),
+            } => Ok(self.analyze_if_stmt(condition, then_branch, else_branch)?),
+            ast::StmtKind::While { condition, body } => {
+                Ok(self.analyze_while_stmt(condition, body)?)
+            }
             ast::StmtKind::For {
                 iterator,
                 iterable,
@@ -257,7 +265,7 @@ impl<'a> SemanticAnalyzer<'a> {
             _ => return Err("Assignment target must be an identifier".to_string()),
         };
 
-        let (mut_allowed, target_type) = if let Some(symbol) = self.symbols.resolve(&name) {
+        let (is_mut, target_type) = if let Some(symbol) = self.symbols.resolve(&name) {
             match &symbol.kind {
                 symbol_table::SymbolKind::Variable {
                     mutable, var_type, ..
@@ -273,7 +281,7 @@ impl<'a> SemanticAnalyzer<'a> {
             return Err(format!("Undefined variable '{}'", name));
         };
 
-        if !mut_allowed {
+        if !is_mut {
             return Err(format!("Cannot assign to immutable variable '{}'", name));
         }
 
@@ -289,22 +297,43 @@ impl<'a> SemanticAnalyzer<'a> {
     }
 
     fn analyze_return_stmt(&mut self, ret_expr: Option<ast::Expr>) {
-        let expected_type = self
-            .curr_ret_type
+        let expected = self
+            .curr_func_block
             .clone()
-            .expect("Return statement found outside of a function!");
+            .expect("Unexpected return statement");
 
         if let Some(expr) = ret_expr {
-            if let Err(e) = self.convert_expr_to_val_type(expr, expected_type.clone()) {
-                println!("Semantic error in return: {}", e);
-            }
-        } else {
-            if expected_type != symbol_table::Type::Unit {
+            let ret_val_type = self
+                .convert_expr_to_val_type(expr, expected.curr_ret_type.clone())
+                .unwrap();
+            let ret_type = symbol_table::Value::new(ret_val_type).val_type;
+
+            if expected.curr_ret_type != symbol_table::Type::Unit {
                 println!(
-                    "Semantic Error: Expected return value of type {:?}, found Unit",
-                    expected_type
+                    "Semantic error: Expected return type {:?}, found Unit",
+                    expected.curr_ret_type
                 );
             }
+
+            if expected.curr_ret_type != ret_type {
+                println!(
+                    "Semantic error: Expected return type {:?}, found {:?}",
+                    expected.curr_ret_type, ret_type
+                );
+            }
+        }
+
+        let name = expected.current_func_name;
+
+        let symbol = symbol_table::Symbol {
+            name: name.clone(),
+            kind: symbol_table::SymbolKind::Return {
+                return_type: expected.curr_ret_type,
+            },
+        };
+
+        if let Err(e) = self.symbols.define(&name, symbol) {
+            println!("Semantic Error: {}", e);
         }
     }
 
@@ -323,7 +352,7 @@ impl<'a> SemanticAnalyzer<'a> {
     fn analyze_if_stmt(
         &mut self,
         condition: ast::Expr,
-        then_branch: ast::Stmt,
+        then_branch: Box<ast::Stmt>,
         else_branch: Option<Box<ast::Stmt>>,
     ) -> Result<(), String> {
         let cond_type = self.analyze_expr(condition)?;
@@ -335,7 +364,7 @@ impl<'a> SemanticAnalyzer<'a> {
             ));
         }
 
-        self.analyze_stmt(then_branch)?;
+        self.analyze_stmt(*then_branch)?;
 
         if let Some(else_stmt) = else_branch {
             self.analyze_stmt(*else_stmt)?;
@@ -344,7 +373,11 @@ impl<'a> SemanticAnalyzer<'a> {
         Ok(())
     }
 
-    fn analyze_while_stmt(&mut self, condition: ast::Expr, body: ast::Stmt) -> Result<(), String> {
+    fn analyze_while_stmt(
+        &mut self,
+        condition: ast::Expr,
+        body: Box<ast::Stmt>,
+    ) -> Result<(), String> {
         let cond_type = self.analyze_expr(condition)?;
 
         if cond_type != symbol_table::Type::Bool {
@@ -354,7 +387,7 @@ impl<'a> SemanticAnalyzer<'a> {
             ));
         }
 
-        self.analyze_stmt(body)?;
+        self.analyze_stmt(*body)?;
         Ok(())
     }
 
@@ -488,8 +521,11 @@ impl<'a> SemanticAnalyzer<'a> {
             println!("Semantic Error: {}", e);
         }
 
-        let prev_ret_type = self.curr_ret_type.clone();
-        self.curr_ret_type = Some(ret_type.clone());
+        let prev_func_block = self.curr_func_block.clone();
+        self.curr_func_block = Some(CurrFuncBlock {
+            current_func_name: name,
+            curr_ret_type: ret_type.clone(),
+        });
 
         self.symbols.enter_scope();
 
@@ -516,7 +552,7 @@ impl<'a> SemanticAnalyzer<'a> {
             println!("Semantic Error: {}", e);
         }
 
-        self.curr_ret_type = prev_ret_type;
+        self.curr_func_block = prev_func_block;
     }
 
     fn analyze_struct_decl(&mut self, name: String, fields: Vec<(String, ast::TypeExpr)>) {
@@ -646,37 +682,37 @@ impl<'a> SemanticAnalyzer<'a> {
                         symbol_table::Type::UIntN => {
                             symbol_table::ValueType::UIntN(i_lit.try_into().unwrap())
                         }
-                        _ => todo!(),
+                        _ => Err(format!("Unknown integer type"))?,
                     },
                     token::LiteralTypes::Float(f_lit) => match s_type {
                         symbol_table::Type::Float32 => {
                             symbol_table::ValueType::Float32(f_lit as f32)
                         }
                         symbol_table::Type::Float64 => symbol_table::ValueType::Float64(f_lit),
-                        _ => todo!("Handle edge case"),
+                        _ => Err(format!("Unknown float type"))?,
                     },
 
                     token::LiteralTypes::String(s_lit) => match s_type {
                         symbol_table::Type::String => symbol_table::ValueType::String(s_lit),
-                        _ => todo!(),
+                        _ => Err(format!("Unknown string type"))?,
                     },
 
                     token::LiteralTypes::Bool(bool_lit) => match s_type {
                         symbol_table::Type::Bool => symbol_table::ValueType::Bool(bool_lit),
-                        _ => todo!(),
+                        _ => Err(format!("Unknown bool type"))?,
                     },
 
                     token::LiteralTypes::Char(char_lit) => match s_type {
                         symbol_table::Type::Char => symbol_table::ValueType::Char(char_lit),
-                        _ => todo!(),
+                        _ => Err(format!("Unknown char type"))?,
                     },
-                    _ => todo!(),
+                    _ => Err(format!("Unknown literal type"))?,
                 };
 
                 return Ok(val_type);
             }
-            _ => Err("todo".to_string()),
+            _ => Err(format!("Unknown literal expr"))?,
         }
-        // Err("Implement existing logic".to_string())
+        Err(format!("Error: converting expr to value type"))
     }
 }
