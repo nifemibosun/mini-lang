@@ -205,7 +205,7 @@ impl<'a> SemanticAnalyzer<'a> {
     fn analyze_stmt(&mut self, stmt: ast::Stmt) -> Result<(), String> {
         match stmt.value {
             ast::StmtKind::ExprStmt(expr) => {
-                self.analyze_expr(expr).unwrap();
+                self.analyze_expr(expr)?;
                 Ok(())
             }
             ast::StmtKind::Let {
@@ -225,7 +225,7 @@ impl<'a> SemanticAnalyzer<'a> {
                 operator,
                 value,
             } => Ok(self.analyze_assign_stmt(target, value)?),
-            ast::StmtKind::Return(ret_expr) => Ok(self.analyze_return_stmt(ret_expr)),
+            ast::StmtKind::Return(ret_expr) => Ok(self.analyze_return_stmt(ret_expr)?),
             ast::StmtKind::Block(body) => {
                 self.analyze_block_stmt(body);
                 Ok(())
@@ -296,7 +296,7 @@ impl<'a> SemanticAnalyzer<'a> {
         Ok(())
     }
 
-    fn analyze_return_stmt(&mut self, ret_expr: Option<ast::Expr>) {
+    fn analyze_return_stmt(&mut self, ret_expr: Option<ast::Expr>) -> Result<(), String> {
         let expected = self
             .curr_func_block
             .clone()
@@ -304,20 +304,12 @@ impl<'a> SemanticAnalyzer<'a> {
 
         if let Some(expr) = ret_expr {
             let ret_val_type = self
-                .convert_expr_to_val_type(expr, expected.curr_ret_type.clone())
-                .unwrap();
+                .convert_expr_to_val_type(expr, expected.curr_ret_type.clone())?;
             let ret_type = symbol_table::Value::new(ret_val_type).val_type;
-
-            if expected.curr_ret_type != symbol_table::Type::Unit {
-                println!(
-                    "Semantic error: Expected return type {:?}, found Unit",
-                    expected.curr_ret_type
-                );
-            }
 
             if expected.curr_ret_type != ret_type {
                 println!(
-                    "Semantic error: Expected return type {:?}, found {:?}",
+                    "Semantic Error: Expected return type {:?}, found {:?}",
                     expected.curr_ret_type, ret_type
                 );
             }
@@ -333,20 +325,24 @@ impl<'a> SemanticAnalyzer<'a> {
         };
 
         if let Err(e) = self.symbols.define(&name, symbol) {
-            println!("Semantic Error: {}", e);
+            return Err(format!("Semantic Error: {}", e));
         }
+
+        Ok(())
     }
 
-    fn analyze_block_stmt(&mut self, body: Vec<ast::Stmt>) {
+    fn analyze_block_stmt(&mut self, body: Vec<ast::Stmt>) -> Result<(), String> {
         self.symbols.enter_scope();
 
         for stmt in body {
-            self.analyze_stmt(stmt).unwrap();
+            self.analyze_stmt(stmt)?;
         }
 
         if let Err(e) = self.symbols.exit_scope() {
-            println!("Semantic Error: {}", e);
+            return Err(format!("Semantic Error: {}", e));
         }
+
+        Ok(())
     }
 
     fn analyze_if_stmt(
@@ -397,8 +393,8 @@ impl<'a> SemanticAnalyzer<'a> {
         ty: ast::TypeExpr,
         mutable: bool,
         value: ast::Node<ast::ExprKind>,
-    ) {
-        let var_type = self.convert_type_expr_to_type(ty).unwrap();
+    ) -> Result<(), String> {
+        let var_type = self.convert_type_expr_to_type(ty)?;
         let rhs_expr = ast::Expr {
             value: value.value.clone(),
             pos: value.pos,
@@ -407,18 +403,16 @@ impl<'a> SemanticAnalyzer<'a> {
         let rhs_type = match self.analyze_expr(rhs_expr.clone()) {
             Ok(t) => t,
             Err(e) => {
-                println!("Semantic Error: {}", e);
-                return;
+                return Err(format!("Semantic Error: {}", e));
             }
         };
 
         if var_type != rhs_type {
-            symbol_table::SymbolTableError::TypeMismatch {
-                name,
-                expected: var_type,
+            let err = symbol_table::SymbolTableError::TypeMismatch {
+                name: name.clone(),
+                expected: var_type.clone(),
                 found: rhs_type,
             };
-            return;
         }
 
         let symbol_value = match &rhs_expr.value {
@@ -426,7 +420,7 @@ impl<'a> SemanticAnalyzer<'a> {
                 match self.convert_expr_to_val_type(rhs_expr, var_type.clone()) {
                     Ok(val) => Some(symbol_table::Value::new(val)),
                     Err(e) => {
-                        println!("Semantic Error converting value: {}", e);
+                        format!("Semantic Error: converting value {}", e);
                         None
                     }
                 }
@@ -444,8 +438,10 @@ impl<'a> SemanticAnalyzer<'a> {
         };
 
         if let Err(e) = self.symbols.define(&name, symbol) {
-            println!("Semantic Error: {}", e);
+            return Err(format!("Semantic Error: {}", e));
         }
+
+        Ok(())
     }
 
     fn analyze_decl(&mut self, decl: ast::Decl) -> Result<(), String> {
@@ -458,8 +454,8 @@ impl<'a> SemanticAnalyzer<'a> {
                 ..
             } => Ok(self.analyze_const(name, r#type, value)),
             ast::Decl::Type { name, r#type, .. } => Ok(self.analyze_type_decl(name, r#type)),
-            ast::Decl::Func(func_decl) => Ok(self.analyze_func_decl(func_decl)),
-            ast::Decl::Struct { name, fields, .. } => Ok(self.analyze_struct_decl(name, fields)),
+            ast::Decl::Func(func_decl) => Ok(self.analyze_func_decl(func_decl)?),
+            ast::Decl::Struct { name, fields, .. } => Ok(self.analyze_struct_decl(name, fields)?),
             ast::Decl::Enum {
                 is_public,
                 name,
@@ -492,19 +488,19 @@ impl<'a> SemanticAnalyzer<'a> {
         }
     }
 
-    fn analyze_func_decl(&mut self, func_decl: ast::FuncDecl) {
+    fn analyze_func_decl(&mut self, func_decl: ast::FuncDecl) -> Result<(), String> {
         let name = func_decl.name;
         let mut func_params = Vec::new();
 
         for param in func_decl.params {
             let param_name = param.0;
-            let param_type = self.convert_type_expr_to_type(param.1).unwrap();
+            let param_type = self.convert_type_expr_to_type(param.1)?;
 
             func_params.push((param_name, param_type));
         }
 
         let ret_type: symbol_table::Type = if let Some(ty) = func_decl.return_type {
-            self.convert_type_expr_to_type(ty).unwrap()
+            self.convert_type_expr_to_type(ty)?
         } else {
             symbol_table::Type::Unit
         };
@@ -518,7 +514,7 @@ impl<'a> SemanticAnalyzer<'a> {
         };
 
         if let Err(e) = self.symbols.define(&name, symbol) {
-            println!("Semantic Error: {}", e);
+            return Err(format!("Semantic Error: {}", e));
         }
 
         let prev_func_block = self.curr_func_block.clone();
@@ -540,27 +536,28 @@ impl<'a> SemanticAnalyzer<'a> {
             };
 
             if let Err(e) = self.symbols.define(&p_name, param_symbol) {
-                println!("Semantic Error: {}", e);
+                return Err(format!("Semantic Error: {}", e));
             }
         }
 
         for stmt in func_decl.body {
-            self.analyze_stmt(stmt).unwrap();
+            self.analyze_stmt(stmt)?;
         }
 
         if let Err(e) = self.symbols.exit_scope() {
-            println!("Semantic Error: {}", e);
+            return Err(format!("Semantic Error: {}", e));
         }
 
         self.curr_func_block = prev_func_block;
+        Ok(())
     }
 
-    fn analyze_struct_decl(&mut self, name: String, fields: Vec<(String, ast::TypeExpr)>) {
+    fn analyze_struct_decl(&mut self, name: String, fields: Vec<(String, ast::TypeExpr)>) -> Result<(), String> {
         let mut struct_fields = HashMap::new();
 
         for field in fields {
             let field_name = field.0;
-            let field_type = self.convert_type_expr_to_type(field.1).unwrap();
+            let field_type = self.convert_type_expr_to_type(field.1)?;
 
             struct_fields.insert(field_name, field_type);
         }
@@ -573,8 +570,10 @@ impl<'a> SemanticAnalyzer<'a> {
         };
 
         if let Err(e) = self.symbols.define(&name, symbol) {
-            println!("Semantic Error: {}", e);
+            return Err(format!("Semantic Error: {}", e));
         }
+
+        Ok(())
     }
 
     fn analyze_construct_decl(&mut self, name: String, methods: Vec<ast::FuncDecl>) {
