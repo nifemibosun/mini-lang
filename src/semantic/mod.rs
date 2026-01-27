@@ -7,7 +7,7 @@ use crate::parser::ast;
 use crate::scanner::token;
 
 #[derive(Debug, Clone)]
-struct CurrFuncBlock {
+pub struct CurrFuncBlock {
     current_func_name: String,
     curr_ret_type: symbol_table::Type,
 }
@@ -15,7 +15,7 @@ struct CurrFuncBlock {
 #[derive(Debug, Clone)]
 pub struct SemanticAnalyzer<'a> {
     ast: &'a ast::Program,
-    curr_func_block: Option<CurrFuncBlock>,
+    pub curr_func_block: Option<CurrFuncBlock>,
     pub symbols: symbol_table::SymbolTable,
 }
 
@@ -446,7 +446,7 @@ impl<'a> SemanticAnalyzer<'a> {
 
     fn analyze_decl(&mut self, decl: ast::Decl) -> Result<(), String> {
         match decl {
-            ast::Decl::Import { path } => Ok(()),
+            ast::Decl::Import { path } => Ok(self.analyze_import_decl(path)),
             ast::Decl::ConstDecl {
                 name,
                 r#type,
@@ -465,6 +465,13 @@ impl<'a> SemanticAnalyzer<'a> {
                 Ok(self.analyze_construct_decl(name, methods))
             }
             _ => Err(format!("Unknown declaration kind: {:#?}", decl)),
+        }
+    }
+
+    fn analyze_import_decl(&mut self, path: Vec<String>) {
+        // placeholder behaviour
+        for p in path.clone().into_iter().enumerate() {
+            todo!("import decl. not implemented");
         }
     }
 

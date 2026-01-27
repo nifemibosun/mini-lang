@@ -1,5 +1,6 @@
 import std::io;
 
 func main() {
-    println("Hello, Mini\n");
+    let s: string = "Hello, Mini\n";
+    println("{}", s);
 }
