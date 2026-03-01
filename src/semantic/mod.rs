@@ -226,10 +226,7 @@ impl<'a> SemanticAnalyzer<'a> {
                 value,
             } => Ok(self.analyze_assign_stmt(target, value)?),
             ast::StmtKind::Return(ret_expr) => Ok(self.analyze_return_stmt(ret_expr)?),
-            ast::StmtKind::Block(body) => {
-                self.analyze_block_stmt(body);
-                Ok(())
-            }
+            ast::StmtKind::Block(body) => Ok(self.analyze_block_stmt(body)?),
             ast::StmtKind::If {
                 condition,
                 then_branch,
@@ -303,8 +300,8 @@ impl<'a> SemanticAnalyzer<'a> {
             .expect("Unexpected return statement");
 
         if let Some(expr) = ret_expr {
-            let ret_val_type = self
-                .convert_expr_to_val_type(expr, expected.curr_ret_type.clone())?;
+            let ret_val_type =
+                self.convert_expr_to_val_type(expr, expected.curr_ret_type.clone())?;
             let ret_type = symbol_table::Value::new(ret_val_type).val_type;
 
             if expected.curr_ret_type != ret_type {
@@ -559,7 +556,11 @@ impl<'a> SemanticAnalyzer<'a> {
         Ok(())
     }
 
-    fn analyze_struct_decl(&mut self, name: String, fields: Vec<(String, ast::TypeExpr)>) -> Result<(), String> {
+    fn analyze_struct_decl(
+        &mut self,
+        name: String,
+        fields: Vec<(String, ast::TypeExpr)>,
+    ) -> Result<(), String> {
         let mut struct_fields = HashMap::new();
 
         for field in fields {

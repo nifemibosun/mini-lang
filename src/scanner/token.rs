@@ -88,7 +88,7 @@ pub enum TokenType {
     ///"!"
     Bang,
 
-    ///"^"
+    ///"&"
     Ampersand,
     ///"|"
     Bar,
